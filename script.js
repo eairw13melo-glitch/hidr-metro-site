@@ -200,11 +200,16 @@ function gerarHistorico(bloco) {
 function atualizarCampo(blocoIndex, aptIndex, valor) {
   const blocos = carregarBlocos();
   const apt = blocos[blocoIndex].leitura_atual[aptIndex];
+
   apt.leitura_atual = Number(valor);
   apt.total_m3 = apt.leitura_atual - apt.leitura_anterior;
-  apt.total_rs = (apt.total_m3 * 2).toFixed(2);
+  apt.total_rs = (apt.total_m3 * 2).toFixed(2); // substitua a tarifa aqui se quiser
+
   salvarBlocos(blocos);
-  renderizarBlocoIndividual();
+
+  // Atualiza visualmente os campos diretamente
+  document.querySelector(`#m3-${blocoIndex}-${aptIndex}`).textContent = apt.total_m3;
+  document.querySelector(`#rs-${blocoIndex}-${aptIndex}`).value = `R$ ${apt.total_rs}`;
 }
 
 function editarCampo(blocoIndex, aptIndex, campo, valor) {
@@ -305,6 +310,7 @@ function resetarBloco(index) {
   salvarBlocos(blocos);
   window.location.href = "dashboard.html";
 }
+
 
 
 
