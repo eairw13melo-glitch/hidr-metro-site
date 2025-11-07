@@ -354,6 +354,35 @@ function exportarParaExcel(dados, nomeBloco, mes) {
   XLSX.writeFile(workbook, nomeArquivo);
 }
 
+function exportarDados() {
+  const dados = localStorage.getItem("blocos");
+  const blob = new Blob([dados], { type: "application/json" });
+  const link = document.createElement("a");
+
+  link.href = URL.createObjectURL(blob);
+  link.download = "blocos_hidrometro.json";
+  link.click();
+}
+
+function importarDados(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    try {
+      const dados = JSON.parse(e.target.result);
+      localStorage.setItem("blocos", JSON.stringify(dados));
+      alert("Dados importados com sucesso!");
+      window.location.reload();
+    } catch (error) {
+      alert("Erro ao importar dados. Verifique o arquivo.");
+    }
+  };
+  reader.readAsText(file);
+}
+
+
 
 
 
