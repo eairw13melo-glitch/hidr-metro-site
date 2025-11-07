@@ -4,9 +4,7 @@ body {
   padding: 20px;
 }
 
-h1, h2, h3, h4 {
-  margin-bottom: 10px;
-}
+h1, h2, h3, h4 { margin-bottom: 10px; }
 
 button {
   background: #007bff;
@@ -17,44 +15,40 @@ button {
   cursor: pointer;
   border-radius: 4px;
 }
-
-button:hover {
-  background: #0056b3;
-}
+button:hover { background: #0056b3; }
+.btn-danger { background: #c0392b; }
+.btn-danger:hover { background: #922b21; }
 
 table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 10px;
 }
-
 th, td {
   border: 1px solid #ccc;
   padding: 4px;
   text-align: center;
   font-size: 14px;
 }
+thead th {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 1;
+}
 
-input[type="text"],
-input[type="number"] {
+input[type="text"], input[type="number"] {
   padding: 4px;
   width: 100%;
   box-sizing: border-box;
   font-size: 14px;
 }
+input.menor { max-width: 60px; }
+input.pequeno { max-width: 100px; }
+input.media { max-width: 100px; }
+.input-curto { width: 120px; margin: 0 10px 10px 10px; }
 
-input.menor {
-  max-width: 60px;
-}
-
-input.pequeno {
-  max-width: 100px;
-}
-
-input.media {
-  max-width: 100px;
-}
-
+/* cards */
 .bloco {
   background: white;
   padding: 15px;
@@ -62,15 +56,10 @@ input.media {
   border-radius: 6px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
+.bloco h2 { margin: 0 0 10px 0; }
+.bloco p { margin: 2px 0; }
 
-.bloco h2 {
-  margin: 0 0 10px 0;
-}
-
-.bloco p {
-  margin: 2px 0;
-}
-
+/* login */
 .login-container {
   max-width: 300px;
   margin: 100px auto;
@@ -78,7 +67,27 @@ input.media {
   padding: 20px;
   border-radius: 10px;
 }
+.error { color: red; }
 
-.error {
-  color: red;
+/* bloco.html */
+.voltar {
+  background: #6c757d;
+  color: white;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+.voltar:hover { background: #5a6268; }
+
+.acoes { margin: 10px 0 20px; }
+.acoes button { margin-right: 10px; }
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0);
+  white-space: nowrap; border: 0;
 }
