@@ -143,8 +143,8 @@ function gerarTabelaLeituraAtual(bloco, blocoIndex) {
             <td><input type="text" value="${apt.responsavel}" onchange="editarCampo(${blocoIndex}, ${i}, 'responsavel', this.value)"></td>
             <td><input type="number" class="menor" value="${apt.leitura_anterior}" onchange="editarCampo(${blocoIndex}, ${i}, 'leitura_anterior', this.value)"></td>
             <td><input type="number" class="menor" value="${apt.leitura_atual}" oninput="atualizarCampo(${blocoIndex}, ${i}, this.value)"></td>
-            <td>${apt.total_m3}</td>
-            <td><input type="text" class="media" value="R$ ${apt.total_rs}" readonly></td>
+            <td id="m3-${blocoIndex}-${i}">${apt.total_m3}</td>
+            <td><input type="text" id="rs-${blocoIndex}-${i}" class="media" value="R$ ${apt.total_rs}" readonly></td>
             <td><input type="text" value="${apt.obs}" onchange="editarCampo(${blocoIndex}, ${i}, 'obs', this.value)"></td>
             <td>
               <button onclick="salvarApartamentoDireto(${blocoIndex}, ${i})">💾</button>
@@ -310,6 +310,7 @@ function resetarBloco(index) {
   salvarBlocos(blocos);
   window.location.href = "dashboard.html";
 }
+
 
 
 
