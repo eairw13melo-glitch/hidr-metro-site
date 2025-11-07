@@ -1,32 +1,103 @@
+:root {
+  --primary: #007bff;
+  --primary-hover: #0056b3;
+  --danger: #c0392b;
+  --danger-hover: #922b21;
+  --bg: #f7f7f7;
+  --card: #fff;
+  --text: #222;
+  --muted: #666;
+  --border: #ddd;
+}
+
+* { box-sizing: border-box; }
 body {
-  font-family: Arial, sans-serif;
-  background-color: #f7f7f7;
+  font-family: Arial, Helvetica, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  margin: 0;
   padding: 20px;
 }
 
-h1, h2, h3, h4 { margin-bottom: 10px; }
+h1, h2, h3, h4 { margin: 0 0 10px; }
 
 button {
-  background: #007bff;
-  color: white;
+  background: var(--primary);
+  color: #fff;
   border: none;
   padding: 8px 12px;
-  margin: 5px 0;
+  margin: 4px 6px 4px 0;
   cursor: pointer;
   border-radius: 4px;
+  font-size: 14px;
 }
-button:hover { background: #0056b3; }
-.btn-danger { background: #c0392b; }
-.btn-danger:hover { background: #922b21; }
+button:hover { background: var(--primary-hover); }
+.btn-danger { background: var(--danger); }
+.btn-danger:hover { background: var(--danger-hover); }
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.topbar-actions { display: flex; flex-wrap: wrap; align-items: center; }
+
+.login-container {
+  max-width: 320px;
+  margin: 12vh auto;
+  background: var(--card);
+  padding: 22px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.login-container input {
+  width: 100%;
+  padding: 10px;
+  margin: 6px 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.error { color: var(--danger); min-height: 20px; }
+
+#blocos-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.bloco {
+  background: var(--card);
+  padding: 14px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.06);
+}
+.bloco h2 { margin: 0 0 6px; font-size: 18px; }
+.bloco p { margin: 2px 0; color: var(--muted); }
+
+.toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.voltar {
+  background: #6c757d;
+  color: white;
+  padding: 6px 12px;
+  border: none; border-radius: 4px;
+  cursor: pointer;
+}
+.voltar:hover { background: #5a6268; }
+.acoes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 
 table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 10px;
+  background: var(--card);
+  border-radius: 8px;
+  overflow: hidden;
 }
 th, td {
   border: 1px solid #ccc;
-  padding: 4px;
+  padding: 6px;
   text-align: center;
   font-size: 14px;
 }
@@ -38,51 +109,30 @@ thead th {
 }
 
 input[type="text"], input[type="number"] {
-  padding: 4px;
+  padding: 5px;
   width: 100%;
-  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 6px;
   font-size: 14px;
 }
-input.menor { max-width: 60px; }
+input.menor { max-width: 70px; }
 input.pequeno { max-width: 100px; }
-input.media { max-width: 100px; }
-.input-curto { width: 120px; margin: 0 10px 10px 10px; }
+input.media { max-width: 120px; }
+.input-curto { width: 140px; margin: 0 10px 10px 10px; }
 
-/* cards */
-.bloco {
-  background: white;
-  padding: 15px;
-  margin-bottom: 20px;
-  border-radius: 6px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+.tarifa-form {
+  display: grid;
+  grid-template-columns: 1fr 160px;
+  gap: 8px 12px;
+  align-items: center;
+  max-width: 560px;
+  margin: 6px 0 16px;
 }
-.bloco h2 { margin: 0 0 10px 0; }
-.bloco p { margin: 2px 0; }
-
-/* login */
-.login-container {
-  max-width: 300px;
-  margin: 100px auto;
-  background: white;
-  padding: 20px;
-  border-radius: 10px;
+.tarifa-form label { color: var(--muted); }
+.tarifa-form button {
+  grid-column: 1 / -1;
+  justify-self: start;
 }
-.error { color: red; }
-
-/* bloco.html */
-.voltar {
-  background: #6c757d;
-  color: white;
-  padding: 6px 12px;
-  border: none;
-  border-radius: 4px;
-  margin-bottom: 10px;
-  cursor: pointer;
-}
-.voltar:hover { background: #5a6268; }
-
-.acoes { margin: 10px 0 20px; }
-.acoes button { margin-right: 10px; }
 
 .sr-only {
   position: absolute;
