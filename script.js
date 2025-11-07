@@ -431,6 +431,11 @@ function salvarLeituraDoMes(blocoIndex) {
 }
 
 // ============== EXPORTAÇÃO / IMPORTAÇÃO ==============
+function checarXLSX(prontoCb) {
+  if (window.XLSX) { prontoCb(); return; }
+  alert("Biblioteca de planilhas não carregou.\nVerifique sua internet ou o bloqueio de scripts e tente novamente.");
+}
+
 function exportarParaExcel(dados, nomeBloco, mes) {
   const worksheetData = [
     ["Hidrômetro Nº","Responsável","Leitura Anterior","Leitura Atual","m³","R$","Observações"],
@@ -453,23 +458,35 @@ function exportarParaExcel(dados, nomeBloco, mes) {
 }
 
 function exportarLeituraAtual() {
-  const blocos = carregarBlocos();
-  const id = Number(new URLSearchParams(window.location.search).get("id"));
-  const bloco = blocos[id];
-  const dados = bloco.leitura_atual;
+  checarXLSX(() => {
+    const blocos = carregarBlocos();
+    const id = Number(new URLSearchParams(window.location.search).get("id"));
+    const bloco = blocos[id];
+    if (!bloco) { alert("Bloco não encontrado."); return; }
 
-  const worksheetData = [
-    ["Hidrômetro Nº","Responsável","Leitura Anterior","Leitura Atual","m³","R$","Observações"],
-    ...dados.map(apt => [
-      apt.numero,
-      apt.responsavel,
-      apt.leitura_anterior,
-      apt.leitura_atual,
-      apt.total_m3,
-      `R$ ${apt.total_rs}`,
-      apt.obs
-    ])
-  ];
+    const dados = bloco.leitura_atual || [];
+    const worksheetData = [
+      ["Hidrômetro Nº","Responsável","Leitura Anterior","Leitura Atual","m³","R$","Observações"],
+      ...dados.map(apt => [
+        apt.numero,
+        apt.responsavel,
+        apt.leitura_anterior,
+        apt.leitura_atual,
+        apt.total_m3,
+        `R$ ${apt.total_rs}`,
+        apt.obs
+      ])
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Leitura Atual");
+    const mes = mesAtual().replace("-", "_");
+    const nomeArquivo = `LeituraAtual_${(bloco.nome||"Bloco")}_${mes}.xlsx`.replace(/\s+/g, "_");
+    XLSX.writeFile(wb, nomeArquivo);
+  });
+}
+
 
   const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
   const workbook = XLSX.utils.book_new();
@@ -574,4 +591,55 @@ function resetarBloco(id) {
   salvarBlocos(blocos);
   renderizarBlocoIndividual();
   alert("Bloco resetado.");
+}
+
+function salvarLeituraDoMes(blocoIndex) {
+  const blocos = carregarBlocos();
+  const bloco = blocos[blocoIndex];
+  if (!bloco) { alert("Bloco não encontrado."); return; }
+
+  const base = mesAtual(); // YYYY-MM
+  let mes = base, i = 0;
+  bloco.historico = bloco.historico || {};
+  while (bloco.historico[mes]) { i++; mes = `${base}-${String.fromCharCode(96 + i)}`; }
+
+  // 1) Grava no histórico
+  bloco.historico[mes] = JSON.parse(JSON.stringify(bloco.leitura_atual || []));
+
+  // 2) Exporta Excel (se possível)
+  const fazerExport = () => {
+    const dados = bloco.historico[mes];
+    const wsData = [
+      ["Hidrômetro Nº","Responsável","Leitura Anterior","Leitura Atual","m³","R$","Observações"],
+      ...dados.map(apt => [
+        apt.numero, apt.responsavel, apt.leitura_anterior, apt.leitura_atual, apt.total_m3, `R$ ${apt.total_rs}`, apt.obs
+      ])
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Leitura");
+    const nomeArquivo = `Leitura_${(bloco.nome||"Bloco")}_${mes}.xlsx`.replace(/\s+/g, "_");
+    XLSX.writeFile(wb, nomeArquivo);
+  };
+
+  if (window.XLSX) {
+    try { fazerExport(); } catch (e) { console.error(e); alert("Falha ao exportar Excel, mas o histórico foi salvo."); }
+  } else {
+    // Sem XLSX, ainda assim seguimos
+    alert("Histórico salvo. Para exportar Excel, verifique a conexão e recarregue a página (biblioteca não carregada).");
+  }
+
+  // 3) Prepara próxima rodada
+  bloco.leitura_atual = (bloco.leitura_atual || []).map(apt => ({
+    numero: apt.numero,
+    responsavel: apt.responsavel,
+    leitura_anterior: apt.leitura_atual,
+    leitura_atual: 0,
+    total_m3: 0,
+    total_rs: 0,
+    obs: ""
+  }));
+
+  salvarBlocos(blocos);
+  renderizarBlocoIndividual();
 }
