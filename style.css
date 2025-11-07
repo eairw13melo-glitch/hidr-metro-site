@@ -1,0 +1,31 @@
+/* style.css */
+body {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+  background-color: #f0f4f7;
+}
+
+form {
+  margin-bottom: 20px;
+}
+
+input, button {
+  display: block;
+  margin: 10px 0;
+  padding: 10px;
+  width: 100%;
+  max-width: 300px;
+}
+
+.login-container {
+  max-width: 300px;
+  margin: auto;
+  margin-top: 100px;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.error {
+  color: red;
+}
