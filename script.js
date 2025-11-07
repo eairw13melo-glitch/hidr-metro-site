@@ -324,6 +324,36 @@ function resetarBloco(index) {
   window.location.href = "dashboard.html";
 }
 
+function exportarParaExcel(dados, nomeBloco, mes) {
+  const worksheetData = [
+    [
+      "Hidrômetro Nº",
+      "Responsável",
+      "Leitura Anterior",
+      "Leitura Atual",
+      "m³",
+      "R$",
+      "Observações"
+    ],
+    ...dados.map(apt => [
+      apt.numero,
+      apt.responsavel,
+      apt.leitura_anterior,
+      apt.leitura_atual,
+      apt.total_m3,
+      `R$ ${apt.total_rs}`,
+      apt.obs
+    ])
+  ];
+
+  const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Leitura");
+
+  const nomeArquivo = `Leitura_${nomeBloco}_${mes}.xlsx`;
+  XLSX.writeFile(workbook, nomeArquivo);
+}
+
 
 
 
