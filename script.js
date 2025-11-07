@@ -19,10 +19,9 @@ document.addEventListener("DOMContentLoaded", () => {
   carregarBlocos();
 });
 
-// CRIAÇÃO DE BLOCO COM ENDEREÇO E SÍNDICO
+// CRIAÇÃO DE BLOCO
 function criarBloco() {
   const nome = prompt("Nome do novo bloco:");
-  console.log("CRIANDO BLOCO... NOVO CÓDIGO CARREGADO!");
   if (!nome) return;
 
   const endereco = prompt("Endereço do bloco:");
@@ -72,7 +71,7 @@ function carregarBlocos() {
   });
 }
 
-// CARREGAR DADOS DO BLOCO ATUAL
+// CARREGAR BLOCO SELECIONADO
 function carregarBloco() {
   const blocoIndex = document.getElementById("blocoSelect").value;
   const blocos = JSON.parse(localStorage.getItem("blocos")) || [];
@@ -96,7 +95,7 @@ function carregarBloco() {
           <th>Total m³</th>
           <th>Total em R$</th>
           <th>Obs</th>
-          <th>Salvar</th>
+          <th>Ações</th>
         </tr>
       </thead>
       <tbody>
@@ -112,7 +111,10 @@ function carregarBloco() {
         <td id="m3-${i}">${apt.total_m3}</td>
         <td><input type="text" id="rs-${i}" value="R$ ${apt.total_rs}" readonly></td>
         <td><input type="text" id="obs-${i}" value="${apt.obs}"></td>
-        <td><button onclick="salvarApartamento(${blocoIndex}, ${i})">Salvar</button></td>
+        <td>
+          <button onclick="salvarApartamento(${blocoIndex}, ${i})">Salvar</button>
+          <button onclick="removerApartamento(${blocoIndex}, ${i})" style="background: darkred;">🗑️</button>
+        </td>
       </tr>
     `;
   });
@@ -121,19 +123,18 @@ function carregarBloco() {
   container.innerHTML = html;
 }
 
-// ATUALIZAR CONSUMO M³ E R$
+// ATUALIZAR CÁLCULOS
 function atualizarConsumo(i) {
   const anterior = Number(document.getElementById(`anterior-${i}`).value);
   const atual = Number(document.getElementById(`atual-${i}`).value);
   const total = atual - anterior;
   document.getElementById(`m3-${i}`).textContent = total >= 0 ? total : 0;
 
-  // Substituir esse valor pelo cálculo real quando disponível
   const totalReais = total >= 0 ? (total * 2).toFixed(2) : "0.00";
   document.getElementById(`rs-${i}`).value = `R$ ${totalReais}`;
 }
 
-// SALVAR DADOS DE UM APARTAMENTO
+// SALVAR APARTAMENTO
 function salvarApartamento(blocoIndex, aptIndex) {
   const blocos = JSON.parse(localStorage.getItem("blocos")) || [];
   const bloco = blocos[blocoIndex];
@@ -142,10 +143,9 @@ function salvarApartamento(blocoIndex, aptIndex) {
   apt.responsavel = document.getElementById(`resp-${aptIndex}`).value;
   apt.leitura_atual = Number(document.getElementById(`atual-${aptIndex}`).value);
   apt.total_m3 = apt.leitura_atual - apt.leitura_anterior;
-  apt.total_rs = (apt.total_m3 * 2).toFixed(2); // valor temporário
+  apt.total_rs = (apt.total_m3 * 2).toFixed(2); // valor fictício
   apt.obs = document.getElementById(`obs-${aptIndex}`).value;
 
-  // Atualiza leitura anterior
   apt.leitura_anterior = apt.leitura_atual;
 
   localStorage.setItem("blocos", JSON.stringify(blocos));
@@ -153,7 +153,63 @@ function salvarApartamento(blocoIndex, aptIndex) {
   carregarBloco();
 }
 
-// GERENCIAR BLOCOS - MODAL
+// ADICIONAR APARTAMENTO MANUALMENTE
+function adicionarApartamento() {
+  const blocoIndex = document.getElementById("blocoSelect").value;
+  if (blocoIndex === "") {
+    alert("Selecione um bloco primeiro.");
+    return;
+  }
+
+  const blocos = JSON.parse(localStorage.getItem("blocos")) || [];
+  const bloco = blocos[blocoIndex];
+
+  const numero = prompt("Número do novo apartamento (ex: 133-A):");
+  if (!numero) return;
+
+  const jaExiste = bloco.apartamentos.find(a => a.numero === numero);
+  if (jaExiste) {
+    alert("Já existe um apartamento com esse número.");
+    return;
+  }
+
+  bloco.apartamentos.push({
+    numero,
+    responsavel: "",
+    leitura_anterior: 0,
+    leitura_atual: 0,
+    total_m3: 0,
+    total_rs: 0,
+    obs: ""
+  });
+
+  localStorage.setItem("blocos", JSON.stringify(blocos));
+  alert("Apartamento adicionado!");
+  carregarBloco();
+}
+
+// REMOVER APARTAMENTO
+function removerApartamento(blocoIndex, aptIndex) {
+  if (!confirm("Remover este apartamento?")) return;
+
+  const blocos = JSON.parse(localStorage.getItem("blocos")) || [];
+  const bloco = blocos[blocoIndex];
+
+  bloco.apartamentos.splice(aptIndex, 1);
+  localStorage.setItem("blocos", JSON.stringify(blocos));
+  carregarBloco();
+}
+
+// RESETAR TUDO
+function resetarTudo() {
+  if (confirm("⚠️ Tem certeza que deseja apagar TODOS os dados do sistema? Isso não poderá ser desfeito.")) {
+    localStorage.removeItem("blocos");
+    alert("Todos os dados foram apagados.");
+    location.reload();
+  }
+}
+
+// MODAL GERENCIAMENTO DE BLOCOS
 function gerenciarBlocos() {
   const blocos = JSON.parse(localStorage.getItem("blocos")) || [];
   const container = document.getElementById("lista-blocos");
@@ -203,4 +259,3 @@ function excluirBloco(i) {
     document.getElementById("tabela-container").innerHTML = "";
   }
 }
-
