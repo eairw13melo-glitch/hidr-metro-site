@@ -418,6 +418,43 @@ function exportarLeituraAtual() {
   XLSX.writeFile(workbook, nomeArquivo);
 }
 
+function importarLeituraAtual(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, { type: "array" });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+
+    const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+    const blocos = carregarBlocos();
+    const id = new URLSearchParams(window.location.search).get("id");
+    const bloco = blocos[id];
+
+    json.forEach((row, index) => {
+      if (!bloco.leitura_atual[index]) return;
+
+      bloco.leitura_atual[index].numero = row["Hidrômetro Nº"] || bloco.leitura_atual[index].numero;
+      bloco.leitura_atual[index].responsavel = row["Responsável"] || "";
+      bloco.leitura_atual[index].leitura_anterior = Number(row["Leitura Anterior"]) || 0;
+      bloco.leitura_atual[index].leitura_atual = Number(row["Leitura Atual"]) || 0;
+      bloco.leitura_atual[index].total_m3 = bloco.leitura_atual[index].leitura_atual - bloco.leitura_atual[index].leitura_anterior;
+      bloco.leitura_atual[index].total_rs = (bloco.leitura_atual[index].total_m3 * 2).toFixed(2); // ajuste tarifa se necessário
+      bloco.leitura_atual[index].obs = row["Observações"] || "";
+    });
+
+    salvarBlocos(blocos);
+    alert("Leitura importada com sucesso!");
+    renderizarBlocoIndividual();
+  };
+
+  reader.readAsArrayBuffer(file);
+}
+
 
 
 
