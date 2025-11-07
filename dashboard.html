@@ -9,6 +9,7 @@
   <h1>Leitura de Hidrômetro</h1>
 
   <button onclick="criarBloco()">+ Adicionar Bloco</button>
+  <button onclick="gerenciarBlocos()">⚙️ Gerenciar Blocos</button>
 
   <div>
     <label for="blocoSelect">Selecionar Bloco</label>
@@ -19,6 +20,16 @@
 
   <div id="tabela-container"></div>
 
+  <!-- Modal -->
+  <div id="modal-blocos" class="modal" style="display:none;">
+    <div class="modal-content">
+      <span class="close" onclick="fecharModal()">&times;</span>
+      <h3>Gerenciar Blocos</h3>
+      <div id="lista-blocos"></div>
+    </div>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>
+
