@@ -139,7 +139,7 @@ function gerarTabelaLeituraAtual(bloco, blocoIndex) {
       <tbody>
         ${bloco.leitura_atual.map((apt, i) => `
           <tr>
-            <td><input type="text" class="pequeno" value="${apt.numero}" onchange="editarCampo(${blocoIndex}, ${i}, 'numero', this.value)"></td>
+            <td><input type="text" class="pequeno" value="${apt.numero}" id="numero-${blocoIndex}-${i}"></td>
             <td><input type="text" value="${apt.responsavel}" onchange="editarCampo(${blocoIndex}, ${i}, 'responsavel', this.value)"></td>
             <td><input type="number" class="menor" value="${apt.leitura_anterior}" onchange="editarCampo(${blocoIndex}, ${i}, 'leitura_anterior', this.value)"></td>
             <td><input type="number" class="menor" value="${apt.leitura_atual}" oninput="atualizarCampo(${blocoIndex}, ${i}, this.value)"></td>
@@ -148,6 +148,7 @@ function gerarTabelaLeituraAtual(bloco, blocoIndex) {
             <td><input type="text" value="${apt.obs}" onchange="editarCampo(${blocoIndex}, ${i}, 'obs', this.value)"></td>
             <td>
               <button onclick="salvarApartamentoDireto(${blocoIndex}, ${i})">💾</button>
+
               <button onclick="removerApartamento(${blocoIndex}, ${i})" style="background:darkred;">🗑️</button>
             </td>
           </tr>
@@ -215,6 +216,11 @@ function editarCampo(blocoIndex, aptIndex, campo, valor) {
 function salvarApartamentoDireto(blocoIndex, aptIndex) {
   const blocos = carregarBlocos();
   const apt = blocos[blocoIndex].leitura_atual[aptIndex];
+
+  // Atualiza valor do campo número (evita re-renderizar enquanto digita)
+  const novoNumero = document.getElementById(`numero-${blocoIndex}-${aptIndex}`).value;
+  apt.numero = novoNumero;
+
   apt.leitura_anterior = apt.leitura_atual;
   salvarBlocos(blocos);
   renderizarBlocoIndividual();
@@ -299,5 +305,6 @@ function resetarBloco(index) {
   salvarBlocos(blocos);
   window.location.href = "dashboard.html";
 }
+
 
 
