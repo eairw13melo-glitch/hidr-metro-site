@@ -268,11 +268,23 @@ function salvarLeituraDoMes(blocoIndex) {
   const blocos = carregarBlocos();
   const bloco = blocos[blocoIndex];
 
-  const mes = mesAtual();
+  let mes = mesAtual();
+  let contador = 1;
+
   bloco.historico = bloco.historico || {};
 
+  // Evita sobrescrever mês
+  while (bloco.historico[mes]) {
+    mes = `${mesAtual()}(${contador++})`;
+  }
+
+  // Salva a leitura no histórico
   bloco.historico[mes] = JSON.parse(JSON.stringify(bloco.leitura_atual));
 
+  // Gera o Excel
+  exportarParaExcel(bloco.leitura_atual, bloco.nome, mes);
+
+  // Limpa leitura atual para próxima rodada
   bloco.leitura_atual = bloco.leitura_atual.map(apt => ({
     ...apt,
     leitura_anterior: apt.leitura_atual,
@@ -283,9 +295,10 @@ function salvarLeituraDoMes(blocoIndex) {
   }));
 
   salvarBlocos(blocos);
-  alert("Leitura salva no histórico!");
+  alert("Leitura salva no histórico e exportada para Excel!");
   renderizarBlocoIndividual();
 }
+
 
 function mesAtual() {
   const hoje = new Date();
@@ -310,6 +323,7 @@ function resetarBloco(index) {
   salvarBlocos(blocos);
   window.location.href = "dashboard.html";
 }
+
 
 
 
