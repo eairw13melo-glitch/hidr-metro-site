@@ -1,4 +1,10 @@
 // script.js
+const tarifaConfig = {
+  minimo: 64.60,
+  faixa_11_20: 8.94,
+  faixa_21_50: 13.82
+};
+
 
 const user = { username: "admin", password: "1234" };
 
@@ -456,18 +462,19 @@ function importarLeituraAtual(event) {
 }
 
 function calcularValorEscalonado(m3) {
-  const minimo = 64.60;
+  const { minimo, faixa_11_20, faixa_21_50 } = tarifaConfig;
 
   if (m3 <= 10) {
     return minimo;
   } else if (m3 <= 20) {
-    return minimo + (m3 - 10) * 8.94;
+    return minimo + (m3 - 10) * faixa_11_20;
   } else {
-    const faixa2 = 10 * 8.94;
-    const faixa3 = (m3 - 20) * 13.82;
+    const faixa2 = 10 * faixa_11_20;
+    const faixa3 = (m3 - 20) * faixa_21_50;
     return minimo + faixa2 + faixa3;
   }
 }
+
 
 
 
