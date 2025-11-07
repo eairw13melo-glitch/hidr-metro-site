@@ -20,8 +20,32 @@
   <input type="file" id="importar-arquivo" style="display:none" accept=".json,application/json,*/*" onchange="importarDados(event)">
   <button onclick="document.getElementById('importar-arquivo').click()">📥 Importar Dados</button>
 
+  <hr>
+<h2>Configurações de Tarifa 💧</h2>
+
+<form id="form-tarifa">
+  <label>
+    Tarifa mínima (até 10 m³):
+    <input type="number" step="0.01" id="tarifa-minimo">
+  </label><br><br>
+
+  <label>
+    Tarifa por m³ de 11 a 20:
+    <input type="number" step="0.01" id="tarifa-11-20">
+  </label><br><br>
+
+  <label>
+    Tarifa por m³ acima de 20:
+    <input type="number" step="0.01" id="tarifa-21-50">
+  </label><br><br>
+
+  <button type="button" onclick="salvarConfiguracoesTarifa()">💾 Salvar Tarifas</button>
+</form>
+
+  
   <div id="blocos-container"></div>
 
   <script src="script.js"></script>
 </body>
 </html>
+
