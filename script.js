@@ -17,6 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   carregarBlocos();
+  renderizarTodosBlocos();
 });
 
 // CRIAÇÃO DE BLOCO
@@ -53,122 +54,124 @@ function criarBloco() {
   blocos.push({ nome, endereco, sindico, apartamentos });
   localStorage.setItem("blocos", JSON.stringify(blocos));
   carregarBlocos();
+  renderizarTodosBlocos();
   alert("Bloco criado com sucesso!");
 }
 
-// CARREGAR BLOCOS NO SELECT
+// CARREGAR BLOCOS
 function carregarBlocos() {
   const blocos = JSON.parse(localStorage.getItem("blocos")) || [];
-  const select = document.getElementById("blocoSelect");
-  if (!select) return;
-
-  select.innerHTML = `<option value="">Selecione um bloco</option>`;
-  blocos.forEach((b, i) => {
-    const opt = document.createElement("option");
-    opt.value = i;
-    opt.textContent = b.nome;
-    select.appendChild(opt);
-  });
+  return blocos;
 }
 
-// CARREGAR BLOCO SELECIONADO
-function carregarBloco() {
-  const blocoIndex = document.getElementById("blocoSelect").value;
-  const blocos = JSON.parse(localStorage.getItem("blocos")) || [];
-  if (blocoIndex === "") return;
+// RENDERIZAR TODOS OS BLOCOS
+function renderizarTodosBlocos() {
+  const blocos = carregarBlocos();
+  const container = document.getElementById("blocos-container");
+  if (!container) return;
 
-  const bloco = blocos[blocoIndex];
-  const container = document.getElementById("tabela-container");
+  container.innerHTML = "";
 
-  let html = `
-    <h3>${bloco.nome}</h3>
-    <p><strong>Endereço:</strong> ${bloco.endereco || ""}</p>
-    <p><strong>Síndico:</strong> ${bloco.sindico || ""}</p>
+  blocos.forEach((bloco, blocoIndex) => {
+    let html = `
+      <div class="bloco">
+        <h2>${bloco.nome}</h2>
+        <p><strong>Endereço:</strong> ${bloco.endereco}</p>
+        <p><strong>Síndico:</strong> ${bloco.sindico}</p>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Hidrômetro Nº</th>
-          <th>Responsável</th>
-          <th>Leitura Anterior</th>
-          <th>Leitura Atual</th>
-          <th>Total m³</th>
-          <th>Total em R$</th>
-          <th>Obs</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
+        <button onclick="adicionarApartamentoDireto(${blocoIndex})">+ Adicionar Apartamento</button>
+        <button onclick="resetarBloco(${blocoIndex})" style="background: red;">🗑️ Resetar Bloco</button>
 
-  bloco.apartamentos.forEach((apt, i) => {
-    html += `
-      <tr>
-        <td>${apt.numero}</td>
-        <td><input type="text" id="resp-${i}" value="${apt.responsavel}"></td>
-        <td><input type="number" id="anterior-${i}" value="${apt.leitura_anterior}" readonly></td>
-        <td><input type="number" id="atual-${i}" value="${apt.leitura_atual}" oninput="atualizarConsumo(${i})"></td>
-        <td id="m3-${i}">${apt.total_m3}</td>
-        <td><input type="text" id="rs-${i}" value="R$ ${apt.total_rs}" readonly></td>
-        <td><input type="text" id="obs-${i}" value="${apt.obs}"></td>
-        <td>
-          <button onclick="salvarApartamento(${blocoIndex}, ${i})">Salvar</button>
-          <button onclick="removerApartamento(${blocoIndex}, ${i})" style="background: darkred;">🗑️</button>
-        </td>
-      </tr>
+        <table>
+          <thead>
+            <tr>
+              <th>Hidrômetro Nº</th>
+              <th>Responsável</th>
+              <th>Anterior</th>
+              <th>Atual</th>
+              <th>m³</th>
+              <th>R$</th>
+              <th>Obs</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
     `;
+
+    bloco.apartamentos.forEach((apt, aptIndex) => {
+      html += `
+        <tr>
+          <td><input type="text" value="${apt.numero}" onchange="editarCampo(${blocoIndex}, ${aptIndex}, 'numero', this.value)"></td>
+          <td><input type="text" value="${apt.responsavel}" onchange="editarCampo(${blocoIndex}, ${aptIndex}, 'responsavel', this.value)"></td>
+          <td><input type="number" class="menor" value="${apt.leitura_anterior}" readonly></td>
+          <td><input type="number" class="menor" value="${apt.leitura_atual}" oninput="atualizarCampo(${blocoIndex}, ${aptIndex}, this.value)"></td>
+          <td>${apt.total_m3}</td>
+          <td><input type="text" class="menor" value="R$ ${apt.total_rs}" readonly></td>
+          <td><input type="text" value="${apt.obs}" onchange="editarCampo(${blocoIndex}, ${aptIndex}, 'obs', this.value)"></td>
+          <td>
+            <button onclick="salvarApartamentoDireto(${blocoIndex}, ${aptIndex})">💾</button>
+            <button onclick="removerApartamento(${blocoIndex}, ${aptIndex})" style="background: darkred;">🗑️</button>
+          </td>
+        </tr>
+      `;
+    });
+
+    html += `
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    container.innerHTML += html;
   });
-
-  html += `</tbody></table>`;
-  container.innerHTML = html;
 }
 
-// ATUALIZAR CÁLCULOS
-function atualizarConsumo(i) {
-  const anterior = Number(document.getElementById(`anterior-${i}`).value);
-  const atual = Number(document.getElementById(`atual-${i}`).value);
-  const total = atual - anterior;
-  document.getElementById(`m3-${i}`).textContent = total >= 0 ? total : 0;
+// ATUALIZAÇÃO DOS CAMPOS
+function atualizarCampo(blocoIndex, aptIndex, valor) {
+  const blocos = carregarBlocos();
+  const apt = blocos[blocoIndex].apartamentos[aptIndex];
 
-  const totalReais = total >= 0 ? (total * 2).toFixed(2) : "0.00";
-  document.getElementById(`rs-${i}`).value = `R$ ${totalReais}`;
-}
-
-// SALVAR APARTAMENTO
-function salvarApartamento(blocoIndex, aptIndex) {
-  const blocos = JSON.parse(localStorage.getItem("blocos")) || [];
-  const bloco = blocos[blocoIndex];
-  const apt = bloco.apartamentos[aptIndex];
-
-  apt.responsavel = document.getElementById(`resp-${aptIndex}`).value;
-  apt.leitura_atual = Number(document.getElementById(`atual-${aptIndex}`).value);
+  apt.leitura_atual = Number(valor);
   apt.total_m3 = apt.leitura_atual - apt.leitura_anterior;
-  apt.total_rs = (apt.total_m3 * 2).toFixed(2); // valor fictício
-  apt.obs = document.getElementById(`obs-${aptIndex}`).value;
+  apt.total_rs = (apt.total_m3 * 2).toFixed(2);
+
+  localStorage.setItem("blocos", JSON.stringify(blocos));
+  renderizarTodosBlocos();
+}
+
+function editarCampo(blocoIndex, aptIndex, campo, valor) {
+  const blocos = carregarBlocos();
+  blocos[blocoIndex].apartamentos[aptIndex][campo] = valor;
+  localStorage.setItem("blocos", JSON.stringify(blocos));
+}
+
+function salvarApartamentoDireto(blocoIndex, aptIndex) {
+  const blocos = carregarBlocos();
+  const apt = blocos[blocoIndex].apartamentos[aptIndex];
 
   apt.leitura_anterior = apt.leitura_atual;
 
   localStorage.setItem("blocos", JSON.stringify(blocos));
-  alert("Apartamento salvo!");
-  carregarBloco();
+  renderizarTodosBlocos();
 }
 
-// ADICIONAR APARTAMENTO MANUALMENTE
-function adicionarApartamento() {
-  const blocoIndex = document.getElementById("blocoSelect").value;
-  if (blocoIndex === "") {
-    alert("Selecione um bloco primeiro.");
-    return;
-  }
+function removerApartamento(blocoIndex, aptIndex) {
+  if (!confirm("Remover este apartamento?")) return;
+  const blocos = carregarBlocos();
+  blocos[blocoIndex].apartamentos.splice(aptIndex, 1);
+  localStorage.setItem("blocos", JSON.stringify(blocos));
+  renderizarTodosBlocos();
+}
 
-  const blocos = JSON.parse(localStorage.getItem("blocos")) || [];
+function adicionarApartamentoDireto(blocoIndex) {
+  const blocos = carregarBlocos();
   const bloco = blocos[blocoIndex];
 
   const numero = prompt("Número do novo apartamento (ex: 133-A):");
   if (!numero) return;
 
-  const jaExiste = bloco.apartamentos.find(a => a.numero === numero);
-  if (jaExiste) {
+  const existe = bloco.apartamentos.find(a => a.numero === numero);
+  if (existe) {
     alert("Já existe um apartamento com esse número.");
     return;
   }
@@ -184,34 +187,20 @@ function adicionarApartamento() {
   });
 
   localStorage.setItem("blocos", JSON.stringify(blocos));
-  alert("Apartamento adicionado!");
-  carregarBloco();
+  renderizarTodosBlocos();
 }
 
-// REMOVER APARTAMENTO
-function removerApartamento(blocoIndex, aptIndex) {
-  if (!confirm("Remover este apartamento?")) return;
-
-  const blocos = JSON.parse(localStorage.getItem("blocos")) || [];
-  const bloco = blocos[blocoIndex];
-
-  bloco.apartamentos.splice(aptIndex, 1);
+function resetarBloco(blocoIndex) {
+  if (!confirm("Deseja excluir este bloco e todos os apartamentos?")) return;
+  const blocos = carregarBlocos();
+  blocos.splice(blocoIndex, 1);
   localStorage.setItem("blocos", JSON.stringify(blocos));
-  carregarBloco();
+  renderizarTodosBlocos();
 }
 
-// RESETAR TUDO
-function resetarTudo() {
-  if (confirm("⚠️ Tem certeza que deseja apagar TODOS os dados do sistema? Isso não poderá ser desfeito.")) {
-    localStorage.removeItem("blocos");
-    alert("Todos os dados foram apagados.");
-    location.reload();
-  }
-}
-
-// MODAL GERENCIAMENTO DE BLOCOS
+// GERENCIAMENTO VIA MODAL
 function gerenciarBlocos() {
-  const blocos = JSON.parse(localStorage.getItem("blocos")) || [];
+  const blocos = carregarBlocos();
   const container = document.getElementById("lista-blocos");
 
   container.innerHTML = blocos.map((b, i) => `
@@ -223,7 +212,7 @@ function gerenciarBlocos() {
       <label>Síndico:</label>
       <input type="text" id="edit-sindico-${i}" value="${b.sindico || ''}">
       <button onclick="salvarEdicaoBloco(${i})">Salvar</button>
-      <button onclick="excluirBloco(${i})" style="background:red;">Excluir</button>
+      <button onclick="resetarBloco(${i})" style="background:red;">Excluir</button>
     </div>
   `).join('');
 
@@ -235,7 +224,7 @@ function fecharModal() {
 }
 
 function salvarEdicaoBloco(i) {
-  const blocos = JSON.parse(localStorage.getItem("blocos")) || [];
+  const blocos = carregarBlocos();
 
   blocos[i].nome = document.getElementById(`edit-nome-${i}`).value;
   blocos[i].endereco = document.getElementById(`edit-endereco-${i}`).value;
@@ -243,19 +232,6 @@ function salvarEdicaoBloco(i) {
 
   localStorage.setItem("blocos", JSON.stringify(blocos));
   alert("Bloco atualizado!");
-  carregarBlocos();
-  carregarBloco();
+  renderizarTodosBlocos();
   fecharModal();
-}
-
-function excluirBloco(i) {
-  if (confirm("Tem certeza que deseja excluir este bloco?")) {
-    const blocos = JSON.parse(localStorage.getItem("blocos")) || [];
-    blocos.splice(i, 1);
-    localStorage.setItem("blocos", JSON.stringify(blocos));
-    alert("Bloco removido.");
-    carregarBlocos();
-    fecharModal();
-    document.getElementById("tabela-container").innerHTML = "";
-  }
 }
