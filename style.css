@@ -1,5 +1,5 @@
 body {
-  font-family: sans-serif;
+  font-family: Arial, sans-serif;
   background-color: #f7f7f7;
   padding: 20px;
 }
@@ -8,38 +8,12 @@ h1 {
   margin-bottom: 20px;
 }
 
-.login-container {
-  max-width: 300px;
-  margin: 100px auto;
-  background: white;
-  padding: 20px;
-  border-radius: 10px;
-}
-
-input, select, button {
-  padding: 8px;
-  margin: 5px 0;
-  width: 100%;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-}
-
-th, td {
-  border: 1px solid #ccc;
-  padding: 6px;
-  text-align: center;
-}
-
 button {
   background: #007bff;
   color: white;
   border: none;
-  padding: 8px;
-  margin-right: 5px;
+  padding: 8px 12px;
+  margin: 5px 0;
   cursor: pointer;
   border-radius: 4px;
 }
@@ -48,16 +22,49 @@ button:hover {
   background: #0056b3;
 }
 
-button[style*="background: red"] {
-  background: red;
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
 }
 
-button[style*="background: darkred"] {
-  background: darkred;
+th, td {
+  border: 1px solid #ccc;
+  padding: 4px;
+  text-align: center;
+  font-size: 14px;
 }
 
-.error {
-  color: red;
+input[type="text"],
+input[type="number"] {
+  padding: 4px;
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 14px;
+}
+
+input[type="number"] {
+  max-width: 80px;
+}
+
+input.menor {
+  max-width: 60px;
+}
+
+.bloco {
+  background: white;
+  padding: 15px;
+  margin-bottom: 20px;
+  border-radius: 6px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.bloco h2 {
+  margin: 0 0 10px 0;
+}
+
+.bloco p {
+  margin: 2px 0;
 }
 
 /* Modal */
@@ -93,4 +100,16 @@ button[style*="background: darkred"] {
   top: 10px;
   font-size: 20px;
   cursor: pointer;
+}
+
+.login-container {
+  max-width: 300px;
+  margin: 100px auto;
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+}
+
+.error {
+  color: red;
 }
