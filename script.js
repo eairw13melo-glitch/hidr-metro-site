@@ -101,7 +101,7 @@ function renderizarTodosBlocos() {
     bloco.apartamentos.forEach((apt, aptIndex) => {
       html += `
         <tr>
-          <td><input type="text" value="${apt.numero}" onchange="editarCampo(${blocoIndex}, ${aptIndex}, 'numero', this.value)"></td>
+          <td><input type="text" class="pequeno" value="${apt.numero}" onchange="editarCampo(${blocoIndex}, ${aptIndex}, 'numero', this.value)"></td>
           <td><input type="text" value="${apt.responsavel}" onchange="editarCampo(${blocoIndex}, ${aptIndex}, 'responsavel', this.value)"></td>
           <td><input type="number" class="menor" value="${apt.leitura_anterior}" readonly></td>
           <td><input type="number" class="menor" value="${apt.leitura_atual}" oninput="atualizarCampo(${blocoIndex}, ${aptIndex}, this.value)"></td>
@@ -235,3 +235,4 @@ function salvarEdicaoBloco(i) {
   renderizarTodosBlocos();
   fecharModal();
 }
+
