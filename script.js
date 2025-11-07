@@ -127,7 +127,7 @@ function renderizarBlocoIndividual() {
               <td><input type="number" class="menor" value="${apt.leitura_anterior}" readonly></td>
               <td><input type="number" class="menor" value="${apt.leitura_atual}" oninput="atualizarCampo(${id}, ${aptIndex}, this.value)"></td>
               <td>${apt.total_m3}</td>
-              <td><input type="text" class="menor" value="R$ ${apt.total_rs}" readonly></td>
+              <td><input type="text" class="media" value="R$ ${apt.total_rs}" readonly></td>
               <td><input type="text" value="${apt.obs}" onchange="editarCampo(${id}, ${aptIndex}, 'obs', this.value)"></td>
               <td>
                 <button onclick="salvarApartamentoDireto(${id}, ${aptIndex})">💾</button>
@@ -244,4 +244,5 @@ function salvarEdicaoBloco(i) {
   fecharModal();
   renderizarListaDeBlocos();
 }
+
 
