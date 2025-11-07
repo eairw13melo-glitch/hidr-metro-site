@@ -4,8 +4,8 @@ body {
   padding: 20px;
 }
 
-h1 {
-  margin-bottom: 20px;
+h1, h2 {
+  margin-bottom: 10px;
 }
 
 button {
@@ -43,12 +43,12 @@ input[type="number"] {
   font-size: 14px;
 }
 
-input[type="number"] {
-  max-width: 80px;
-}
-
 input.menor {
   max-width: 60px;
+}
+
+input.pequeno {
+  max-width: 100px;
 }
 
 .bloco {
@@ -113,8 +113,3 @@ input.menor {
 .error {
   color: red;
 }
-
-.pequeno {
-  max-width: 100px;
-}
-
