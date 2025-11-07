@@ -113,3 +113,8 @@ input.pequeno {
 .error {
   color: red;
 }
+
+input.media {
+  max-width: 100px;
+}
+
