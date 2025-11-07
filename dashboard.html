@@ -11,19 +11,7 @@
   <button onclick="criarBloco()">+ Adicionar Bloco</button>
   <button onclick="gerenciarBlocos()">⚙️ Gerenciar Blocos</button>
 
-  <div>
-    <label for="blocoSelect">Selecionar Bloco</label>
-    <select id="blocoSelect" onchange="carregarBloco()">
-      <option value="">Selecione um bloco</option>
-    </select>
-  </div>
-
-  <div style="margin-top: 10px;">
-    <button onclick="adicionarApartamento()">+ Adicionar Apartamento</button>
-    <button onclick="resetarTudo()" style="background: red;">🗑️ Resetar Tudo</button>
-  </div>
-
-  <div id="tabela-container"></div>
+  <div id="blocos-container"></div>
 
   <!-- Modal de gerenciamento -->
   <div id="modal-blocos" class="modal" style="display:none;">
