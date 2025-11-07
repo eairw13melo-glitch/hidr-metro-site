@@ -22,17 +22,14 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// Carrega blocos
 function carregarBlocos() {
   return JSON.parse(localStorage.getItem("blocos")) || [];
 }
 
-// Salva blocos
 function salvarBlocos(blocos) {
   localStorage.setItem("blocos", JSON.stringify(blocos));
 }
 
-// Cria novo bloco
 function criarBloco() {
   const nome = prompt("Nome do novo bloco:");
   if (!nome) return;
@@ -46,9 +43,9 @@ function criarBloco() {
     return;
   }
 
-  const apartamentos = [];
+  const leitura_atual = [];
   for (let i = 1; i <= 32; i++) {
-    apartamentos.push({
+    leitura_atual.push({
       numero: `${100 + i}-A`,
       responsavel: "",
       leitura_anterior: 0,
@@ -59,13 +56,12 @@ function criarBloco() {
     });
   }
 
-  blocos.push({ nome, endereco, sindico, apartamentos });
+  blocos.push({ nome, endereco, sindico, leitura_atual, historico: {} });
   salvarBlocos(blocos);
   renderizarListaDeBlocos();
   alert("Bloco criado!");
 }
 
-// Renderiza a lista de blocos (dashboard.html)
 function renderizarListaDeBlocos() {
   const blocos = carregarBlocos();
   const container = document.getElementById("blocos-container");
@@ -85,12 +81,10 @@ function renderizarListaDeBlocos() {
   });
 }
 
-// Renderiza bloco individual (bloco.html)
 function renderizarBlocoIndividual() {
   const blocos = carregarBlocos();
   const id = new URLSearchParams(window.location.search).get("id");
   const bloco = blocos[id];
-
   if (!bloco) {
     document.body.innerHTML = "<h2>Bloco não encontrado.</h2>";
     return;
@@ -104,8 +98,63 @@ function renderizarBlocoIndividual() {
       <p><strong>Síndico:</strong> ${bloco.sindico}</p>
 
       <button onclick="adicionarApartamentoDireto(${id})">+ Adicionar Apartamento</button>
+      <button onclick="salvarLeituraDoMes(${id})">💾 Salvar Leitura do Mês</button>
       <button onclick="resetarBloco(${id})" style="background:red;">🗑️ Resetar Bloco</button>
 
+      <h3>📌 Leitura Atual (${mesAtualLabel()})</h3>
+      ${gerarTabelaLeituraAtual(bloco, id)}
+    </div>
+
+    <h3 style="margin-top:30px;">📚 Histórico de Leituras</h3>
+    ${gerarHistorico(bloco)}
+  `;
+}
+
+function gerarTabelaLeituraAtual(bloco, blocoIndex) {
+  return `
+    <table>
+      <thead>
+        <tr>
+          <th>Hidrômetro Nº</th>
+          <th>Responsável</th>
+          <th>Anterior</th>
+          <th>Atual</th>
+          <th>m³</th>
+          <th>R$</th>
+          <th>Obs</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${bloco.leitura_atual.map((apt, i) => `
+          <tr>
+            <td><input type="text" class="pequeno" value="${apt.numero}" onchange="editarCampo(${blocoIndex}, ${i}, 'numero', this.value)"></td>
+            <td><input type="text" value="${apt.responsavel}" onchange="editarCampo(${blocoIndex}, ${i}, 'responsavel', this.value)"></td>
+            <td><input type="number" class="menor" value="${apt.leitura_anterior}" onchange="editarCampo(${blocoIndex}, ${i}, 'leitura_anterior', this.value)"></td>
+            <td><input type="number" class="menor" value="${apt.leitura_atual}" oninput="atualizarCampo(${blocoIndex}, ${i}, this.value)"></td>
+            <td>${apt.total_m3}</td>
+            <td><input type="text" class="media" value="R$ ${apt.total_rs}" readonly></td>
+            <td><input type="text" value="${apt.obs}" onchange="editarCampo(${blocoIndex}, ${i}, 'obs', this.value)"></td>
+            <td>
+              <button onclick="salvarApartamentoDireto(${blocoIndex}, ${i})">💾</button>
+              <button onclick="removerApartamento(${blocoIndex}, ${i})" style="background:darkred;">🗑️</button>
+            </td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+function gerarHistorico(bloco) {
+  const historico = bloco.historico || {};
+  const meses = Object.keys(historico).sort().reverse();
+
+  if (meses.length === 0) return `<p>Nenhuma leitura registrada ainda.</p>`;
+
+  return meses.map(mes => {
+    return `
+      <h4>📅 ${formatarMesLabel(mes)}</h4>
       <table>
         <thead>
           <tr>
@@ -116,41 +165,30 @@ function renderizarBlocoIndividual() {
             <th>m³</th>
             <th>R$</th>
             <th>Obs</th>
-            <th>Ações</th>
           </tr>
         </thead>
         <tbody>
-          ${bloco.apartamentos.map((apt, aptIndex) => `
+          ${historico[mes].map(apt => `
             <tr>
-              <td><input type="text" class="pequeno" value="${apt.numero}" onchange="editarCampo(${id}, ${aptIndex}, 'numero', this.value)"></td>
-              <td><input type="text" value="${apt.responsavel}" onchange="editarCampo(${id}, ${aptIndex}, 'responsavel', this.value)"></td>
-              <td><input type="number" class="menor" value="${apt.leitura_anterior}" readonly></td>
-              <td><input type="number" class="menor" value="${apt.leitura_atual}" oninput="atualizarCampo(${id}, ${aptIndex}, this.value)"></td>
+              <td>${apt.numero}</td>
+              <td>${apt.responsavel}</td>
+              <td>${apt.leitura_anterior}</td>
+              <td>${apt.leitura_atual}</td>
               <td>${apt.total_m3}</td>
-              <td><input type="text" class="media" value="R$ ${apt.total_rs}" readonly></td>
-              <td><input type="text" value="${apt.obs}" onchange="editarCampo(${id}, ${aptIndex}, 'obs', this.value)"></td>
-              <td>
-                <button onclick="salvarApartamentoDireto(${id}, ${aptIndex})">💾</button>
-                <button onclick="removerApartamento(${id}, ${aptIndex})" style="background:darkred;">🗑️</button>
-              </td>
+              <td>R$ ${apt.total_rs}</td>
+              <td>${apt.obs}</td>
             </tr>
-          `).join('')}
+          `).join("")}
         </tbody>
       </table>
-    </div>
-  `;
+    `;
+  }).join("");
 }
 
-// Ações em apartamentos
-function editarCampo(blocoIndex, aptIndex, campo, valor) {
-  const blocos = carregarBlocos();
-  blocos[blocoIndex].apartamentos[aptIndex][campo] = valor;
-  salvarBlocos(blocos);
-}
-
+// Atualiza valores ao digitar
 function atualizarCampo(blocoIndex, aptIndex, valor) {
   const blocos = carregarBlocos();
-  const apt = blocos[blocoIndex].apartamentos[aptIndex];
+  const apt = blocos[blocoIndex].leitura_atual[aptIndex];
   apt.leitura_atual = Number(valor);
   apt.total_m3 = apt.leitura_atual - apt.leitura_anterior;
   apt.total_rs = (apt.total_m3 * 2).toFixed(2);
@@ -158,9 +196,15 @@ function atualizarCampo(blocoIndex, aptIndex, valor) {
   renderizarBlocoIndividual();
 }
 
+function editarCampo(blocoIndex, aptIndex, campo, valor) {
+  const blocos = carregarBlocos();
+  blocos[blocoIndex].leitura_atual[aptIndex][campo] = valor;
+  salvarBlocos(blocos);
+}
+
 function salvarApartamentoDireto(blocoIndex, aptIndex) {
   const blocos = carregarBlocos();
-  const apt = blocos[blocoIndex].apartamentos[aptIndex];
+  const apt = blocos[blocoIndex].leitura_atual[aptIndex];
   apt.leitura_anterior = apt.leitura_atual;
   salvarBlocos(blocos);
   renderizarBlocoIndividual();
@@ -169,7 +213,7 @@ function salvarApartamentoDireto(blocoIndex, aptIndex) {
 function removerApartamento(blocoIndex, aptIndex) {
   if (!confirm("Remover este apartamento?")) return;
   const blocos = carregarBlocos();
-  blocos[blocoIndex].apartamentos.splice(aptIndex, 1);
+  blocos[blocoIndex].leitura_atual.splice(aptIndex, 1);
   salvarBlocos(blocos);
   renderizarBlocoIndividual();
 }
@@ -178,16 +222,14 @@ function adicionarApartamentoDireto(blocoIndex) {
   const blocos = carregarBlocos();
   const bloco = blocos[blocoIndex];
 
-  const numero = prompt("Número do novo apartamento (ex: 134-B):");
+  const numero = prompt("Número do novo apartamento:");
   if (!numero) return;
-
-  const existe = bloco.apartamentos.find(a => a.numero === numero);
-  if (existe) {
-    alert("Esse número já existe.");
+  if (bloco.leitura_atual.find(a => a.numero === numero)) {
+    alert("Número já cadastrado.");
     return;
   }
 
-  bloco.apartamentos.push({
+  bloco.leitura_atual.push({
     numero,
     responsavel: "",
     leitura_anterior: 0,
@@ -201,48 +243,51 @@ function adicionarApartamentoDireto(blocoIndex) {
   renderizarBlocoIndividual();
 }
 
+function salvarLeituraDoMes(blocoIndex) {
+  const blocos = carregarBlocos();
+  const bloco = blocos[blocoIndex];
+
+  const mes = mesAtual();
+  bloco.historico = bloco.historico || {};
+
+  // Clona leitura atual para histórico
+  bloco.historico[mes] = JSON.parse(JSON.stringify(bloco.leitura_atual));
+
+  // Reinicia a leitura atual (usando os valores anteriores como base)
+  bloco.leitura_atual = bloco.leitura_atual.map(apt => ({
+    ...apt,
+    leitura_anterior: apt.leitura_atual,
+    leitura_atual: 0,
+    total_m3: 0,
+    total_rs: 0,
+    obs: ""
+  }));
+
+  salvarBlocos(blocos);
+  alert("Leitura salva no histórico!");
+  renderizarBlocoIndividual();
+}
+
+function mesAtual() {
+  const hoje = new Date();
+  return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function mesAtualLabel() {
+  const hoje = new Date();
+  return hoje.toLocaleString("pt-BR", { month: "long", year: "numeric" });
+}
+
+function formatarMesLabel(mes) {
+  const [ano, numeroMes] = mes.split("-");
+  const date = new Date(`${ano}-${numeroMes}-01`);
+  return date.toLocaleString("pt-BR", { month: "long", year: "numeric" });
+}
+
 function resetarBloco(index) {
-  if (!confirm("Deseja apagar este bloco e todos os apartamentos?")) return;
+  if (!confirm("Deseja excluir este bloco e todos os dados?")) return;
   const blocos = carregarBlocos();
   blocos.splice(index, 1);
   salvarBlocos(blocos);
   window.location.href = "dashboard.html";
 }
-
-// Gerenciamento modal
-function gerenciarBlocos() {
-  const blocos = carregarBlocos();
-  const container = document.getElementById("lista-blocos");
-
-  container.innerHTML = blocos.map((b, i) => `
-    <div style="border:1px solid #ccc; padding:10px; margin-bottom:10px;">
-      <label>Nome:</label>
-      <input type="text" id="edit-nome-${i}" value="${b.nome}">
-      <label>Endereço:</label>
-      <input type="text" id="edit-endereco-${i}" value="${b.endereco || ''}">
-      <label>Síndico:</label>
-      <input type="text" id="edit-sindico-${i}" value="${b.sindico || ''}">
-      <button onclick="salvarEdicaoBloco(${i})">Salvar</button>
-      <button onclick="resetarBloco(${i})" style="background:red;">Excluir</button>
-    </div>
-  `).join('');
-
-  document.getElementById("modal-blocos").style.display = "flex";
-}
-
-function fecharModal() {
-  document.getElementById("modal-blocos").style.display = "none";
-}
-
-function salvarEdicaoBloco(i) {
-  const blocos = carregarBlocos();
-  blocos[i].nome = document.getElementById(`edit-nome-${i}`).value;
-  blocos[i].endereco = document.getElementById(`edit-endereco-${i}`).value;
-  blocos[i].sindico = document.getElementById(`edit-sindico-${i}`).value;
-  salvarBlocos(blocos);
-  alert("Bloco atualizado!");
-  fecharModal();
-  renderizarListaDeBlocos();
-}
-
-
