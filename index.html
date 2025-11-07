@@ -8,14 +8,34 @@
 <body>
   <div class="login-container">
     <h2>Login</h2>
-    <form id="login-form">
-      <input type="text" id="username" placeholder="Usuário" required>
-      <input type="password" id="password" placeholder="Senha" required>
+    <form onsubmit="return login()">
+      <input type="text" id="usuario" placeholder="Usuário" required>
+      <input type="password" id="senha" placeholder="Senha" required>
       <button type="submit">Entrar</button>
     </form>
-    <p id="login-error" class="error"></p>
+    <p id="erro-login" style="color: red;"></p>
   </div>
-  <script src="script.js"></script>
+
+  <script>
+    function login() {
+      const user = document.getElementById("usuario").value;
+      const pass = document.getElementById("senha").value;
+
+      // Login simples - pode ser melhorado depois
+      if (user === "admin" && pass === "1234") {
+        localStorage.setItem("logado", "true");
+        window.location.href = "dashboard.html";
+        return false;
+      } else {
+        document.getElementById("erro-login").textContent = "Usuário ou senha inválidos";
+        return false;
+      }
+    }
+
+    // Redireciona se já estiver logado
+    if (localStorage.getItem("logado") === "true") {
+      window.location.href = "dashboard.html";
+    }
+  </script>
 </body>
 </html>
-
