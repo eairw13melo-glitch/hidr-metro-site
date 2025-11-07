@@ -22,6 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // CRIAÇÃO DE BLOCO COM ENDEREÇO E SÍNDICO
 function criarBloco() {
   const nome = prompt("Nome do novo bloco:");
+  console.log("CRIANDO BLOCO... NOVO CÓDIGO CARREGADO!");
   if (!nome) return;
 
   const endereco = prompt("Endereço do bloco:");
@@ -202,3 +203,4 @@ function excluirBloco(i) {
     document.getElementById("tabela-container").innerHTML = "";
   }
 }
+
