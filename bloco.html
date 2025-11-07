@@ -4,54 +4,24 @@
   <meta charset="UTF-8">
   <title>Leituras do Bloco</title>
   <link rel="stylesheet" href="style.css">
-  <style>
-    .voltar {
-      background: #6c757d;
-      color: white;
-      padding: 6px 12px;
-      border: none;
-      border-radius: 4px;
-      margin-bottom: 10px;
-      cursor: pointer;
-    }
-    .voltar:hover {
-      background: #5a6268;
-    }
-
-    .acoes {
-      margin-bottom: 20px;
-    }
-
-    .acoes button {
-      margin-right: 10px;
-      padding: 6px 12px;
-      font-size: 14px;
-    }
-
-    h1 {
-      margin-bottom: 10px;
-    }
-  </style>
 </head>
 <body>
+  <script> if (localStorage.getItem("logado") !== "true") location.href = "index.html"; </script>
 
   <button class="voltar" onclick="window.location.href='dashboard.html'">🔙 Voltar</button>
 
   <h1>Leitura do Bloco</h1>
 
   <div class="acoes">
-    <button onclick="exportarLeituraAtual()">📤 Exportar Leitura Atual</button>
-
     <input type="file" id="importar-leitura-arquivo" style="display:none" accept=".xlsx" onchange="importarLeituraAtual(event)">
-    <button onclick="document.getElementById('importar-leitura-arquivo').click()">📥 Importar Leitura Atual</button>
+    <button type="button" onclick="exportarLeituraAtual()">📤 Exportar Leitura Atual</button>
+    <button type="button" onclick="document.getElementById('importar-leitura-arquivo').click()">📥 Importar Leitura Atual</button>
   </div>
 
   <div id="bloco-detalhes"></div>
 
-  <!-- XLSX Library (apenas 1 vez!) -->
+  <!-- XLSX Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  
-  <!-- Seu script principal -->
   <script src="script.js"></script>
 </body>
 </html>
