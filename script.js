@@ -19,13 +19,16 @@ document.addEventListener("DOMContentLoaded", () => {
   carregarBlocos();
 });
 
-// CRIAÇÃO DE BLOCO
+// CRIAÇÃO DE BLOCO COM ENDEREÇO E SÍNDICO
 function criarBloco() {
   const nome = prompt("Nome do novo bloco:");
   if (!nome) return;
 
   const endereco = prompt("Endereço do bloco:");
+  if (endereco === null) return;
+
   const sindico = prompt("Nome do síndico:");
+  if (sindico === null) return;
 
   const blocos = JSON.parse(localStorage.getItem("blocos")) || [];
 
@@ -199,4 +202,3 @@ function excluirBloco(i) {
     document.getElementById("tabela-container").innerHTML = "";
   }
 }
-
