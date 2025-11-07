@@ -113,3 +113,8 @@ input.menor {
 .error {
   color: red;
 }
+
+.pequeno {
+  max-width: 100px;
+}
+
