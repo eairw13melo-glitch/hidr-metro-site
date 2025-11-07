@@ -290,3 +290,4 @@ function resetarBloco(index) {
   salvarBlocos(blocos);
   window.location.href = "dashboard.html";
 }
+
