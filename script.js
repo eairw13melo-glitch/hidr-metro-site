@@ -382,6 +382,42 @@ function importarDados(event) {
   reader.readAsText(file);
 }
 
+function exportarLeituraAtual() {
+  const blocos = carregarBlocos();
+  const id = new URLSearchParams(window.location.search).get("id");
+  const bloco = blocos[id];
+  const dados = bloco.leitura_atual;
+
+  const worksheetData = [
+    [
+      "Hidrômetro Nº",
+      "Responsável",
+      "Leitura Anterior",
+      "Leitura Atual",
+      "m³",
+      "R$",
+      "Observações"
+    ],
+    ...dados.map(apt => [
+      apt.numero,
+      apt.responsavel,
+      apt.leitura_anterior,
+      apt.leitura_atual,
+      apt.total_m3,
+      `R$ ${apt.total_rs}`,
+      apt.obs
+    ])
+  ];
+
+  const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Leitura Atual");
+
+  const mes = mesAtual().replace("-", "_");
+  const nomeArquivo = `LeituraAtual_${bloco.nome}_${mes}.xlsx`;
+  XLSX.writeFile(workbook, nomeArquivo);
+}
+
 
 
 
