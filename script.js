@@ -203,7 +203,7 @@ function atualizarCampo(blocoIndex, aptIndex, valor) {
 
   apt.leitura_atual = Number(valor);
   apt.total_m3 = apt.leitura_atual - apt.leitura_anterior;
-  apt.total_rs = (apt.total_m3 * 2).toFixed(2); // substitua a tarifa aqui se quiser
+  apt.total_rs = calcularValorEscalonado(apt.total_m3).toFixed(2);
 
   salvarBlocos(blocos);
 
@@ -454,6 +454,21 @@ function importarLeituraAtual(event) {
 
   reader.readAsArrayBuffer(file);
 }
+
+function calcularValorEscalonado(m3) {
+  const minimo = 64.60;
+
+  if (m3 <= 10) {
+    return minimo;
+  } else if (m3 <= 20) {
+    return minimo + (m3 - 10) * 8.94;
+  } else {
+    const faixa2 = 10 * 8.94;
+    const faixa3 = (m3 - 20) * 13.82;
+    return minimo + faixa2 + faixa3;
+  }
+}
+
 
 
 
