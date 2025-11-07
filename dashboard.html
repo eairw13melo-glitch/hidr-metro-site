@@ -4,22 +4,24 @@
   <meta charset="UTF-8">
   <title>Blocos - Hidrômetro</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    button {
+      margin-right: 10px;
+    }
+  </style>
 </head>
 <body>
   <h1>Blocos Cadastrados</h1>
 
   <button onclick="criarBloco()">+ Adicionar Bloco</button>
+  <button onclick="exportarDados()">💾 Exportar Dados</button>
 
-<button onclick="exportarDados()">💾 Exportar Dados</button>
-<input type="file" id="importar-arquivo" style="display:none" accept=".json,application/json,*/*" onchange="importarDados(event)">
-<button onclick="document.getElementById('importar-arquivo').click()">📥 Importar Dados</button>
+  <!-- Corrigido: aceita arquivos .json no celular -->
+  <input type="file" id="importar-arquivo" style="display:none" accept=".json,application/json,*/*" onchange="importarDados(event)">
+  <button onclick="document.getElementById('importar-arquivo').click()">📥 Importar Dados</button>
 
-  
   <div id="blocos-container"></div>
 
   <script src="script.js"></script>
 </body>
 </html>
-
-
-
