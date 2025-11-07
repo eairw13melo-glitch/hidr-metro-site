@@ -1,3 +1,5 @@
+// script.js
+
 const user = { username: "admin", password: "1234" };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -185,7 +187,6 @@ function gerarHistorico(bloco) {
   }).join("");
 }
 
-// Atualiza valores ao digitar
 function atualizarCampo(blocoIndex, aptIndex, valor) {
   const blocos = carregarBlocos();
   const apt = blocos[blocoIndex].leitura_atual[aptIndex];
@@ -250,10 +251,8 @@ function salvarLeituraDoMes(blocoIndex) {
   const mes = mesAtual();
   bloco.historico = bloco.historico || {};
 
-  // Clona leitura atual para histórico
   bloco.historico[mes] = JSON.parse(JSON.stringify(bloco.leitura_atual));
 
-  // Reinicia a leitura atual (usando os valores anteriores como base)
   bloco.leitura_atual = bloco.leitura_atual.map(apt => ({
     ...apt,
     leitura_anterior: apt.leitura_atual,
