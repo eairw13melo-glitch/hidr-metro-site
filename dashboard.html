@@ -10,9 +10,15 @@
 
   <button onclick="criarBloco()">+ Adicionar Bloco</button>
 
+<button onclick="exportarDados()">💾 Exportar Dados</button>
+<input type="file" id="importar-arquivo" style="display:none" onchange="importarDados(event)">
+<button onclick="document.getElementById('importar-arquivo').click()">📥 Importar Dados</button>
+
+  
   <div id="blocos-container"></div>
 
   <script src="script.js"></script>
 </body>
 </html>
+
 
