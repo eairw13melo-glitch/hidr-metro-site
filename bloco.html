@@ -23,6 +23,9 @@
   <button class="voltar" onclick="window.location.href='dashboard.html'">🔙 Voltar</button>
 
   <button onclick="exportarLeituraAtual()">📤 Exportar Leitura Atual</button>
+  <input type="file" id="importar-leitura-arquivo" style="display:none" accept=".xlsx" onchange="importarLeituraAtual(event)">
+  <button onclick="document.getElementById('importar-leitura-arquivo').click()">📥 Importar Leitura Atual</button>
+
 
   <div id="bloco-detalhes"></div>
   
