@@ -36,17 +36,17 @@
 <form id="form-tarifa">
   <label>
     Tarifa mínima (até 10 m³):
-    <input type="number" step="0.01" id="tarifa-minimo">
+    <input type="number" step="0.01" id="tarifa-minimo" class="input-curto">
   </label><br><br>
 
   <label>
     Tarifa por m³ de 11 a 20:
-    <input type="number" step="0.01" id="tarifa-11-20">
+    <input type="number" step="0.01" id="tarifa-11-20" class="input-curto">
   </label><br><br>
 
   <label>
     Tarifa por m³ acima de 20:
-    <input type="number" step="0.01" id="tarifa-21-50">
+    <input type="number" step="0.01" id="tarifa-21-50" class="input-curto">
   </label><br><br>
 
   <button type="button" onclick="salvarConfiguracoesTarifa()">💾 Salvar Tarifas</button>
@@ -58,5 +58,6 @@
   <script src="script.js"></script>
 </body>
 </html>
+
 
 
