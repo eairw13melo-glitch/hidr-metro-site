@@ -17,21 +17,41 @@
     .voltar:hover {
       background: #5a6268;
     }
+
+    .acoes {
+      margin-bottom: 20px;
+    }
+
+    .acoes button {
+      margin-right: 10px;
+      padding: 6px 12px;
+      font-size: 14px;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
   </style>
 </head>
 <body>
+
   <button class="voltar" onclick="window.location.href='dashboard.html'">🔙 Voltar</button>
 
-  <button onclick="exportarLeituraAtual()">📤 Exportar Leitura Atual</button>
-  <input type="file" id="importar-leitura-arquivo" style="display:none" accept=".xlsx" onchange="importarLeituraAtual(event)">
-  <button onclick="document.getElementById('importar-leitura-arquivo').click()">📥 Importar Leitura Atual</button>
+  <h1>Leitura do Bloco</h1>
 
+  <div class="acoes">
+    <button onclick="exportarLeituraAtual()">📤 Exportar Leitura Atual</button>
+
+    <input type="file" id="importar-leitura-arquivo" style="display:none" accept=".xlsx" onchange="importarLeituraAtual(event)">
+    <button onclick="document.getElementById('importar-leitura-arquivo').click()">📥 Importar Leitura Atual</button>
+  </div>
 
   <div id="bloco-detalhes"></div>
-  
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="script.js"></script>
 
+  <!-- XLSX Library (apenas 1 vez!) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  
+  <!-- Seu script principal -->
+  <script src="script.js"></script>
 </body>
 </html>
