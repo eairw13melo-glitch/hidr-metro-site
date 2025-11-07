@@ -92,6 +92,15 @@ function renderizarBlocoIndividual() {
     return;
   }
 
+    // ✅ Corrige blocos antigos que não têm os novos campos
+  if (!bloco.leitura_atual) {
+    bloco.leitura_atual = [];
+  }
+  if (!bloco.historico) {
+    bloco.historico = {};
+  }
+
+  salvarBlocos(blocos); // Salva as correções
   const container = document.getElementById("bloco-detalhes");
   container.innerHTML = `
     <div class="bloco">
@@ -290,4 +299,5 @@ function resetarBloco(index) {
   salvarBlocos(blocos);
   window.location.href = "dashboard.html";
 }
+
 
