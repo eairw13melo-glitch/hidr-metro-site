@@ -2,64 +2,78 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>Blocos - Hidrômetro</title>
+  <title>Dashboard - Hidrômetro</title>
   <link rel="stylesheet" href="style.css">
-  <style>
-    button {
-      margin-right: 10px;
-    }
-      .input-curto {
-    width: 100px;
-    padding: 4px;
-    font-size: 14px;
-  }
 
-  label {
-    display: inline-block;
-    margin-bottom: 8px;
-  }
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+
+    button {
+      margin: 5px 5px 15px 0;
+      padding: 8px 12px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    label {
+      display: inline-block;
+      margin-bottom: 8px;
+    }
+
+    .input-curto {
+      width: 100px;
+      padding: 4px;
+      font-size: 14px;
+      margin-left: 10px;
+    }
+
+    h1, h2 {
+      margin-bottom: 10px;
+    }
+
+    hr {
+      margin: 30px 0;
+    }
   </style>
 </head>
 <body>
+
   <h1>Blocos Cadastrados</h1>
 
   <button onclick="criarBloco()">+ Adicionar Bloco</button>
   <button onclick="exportarDados()">💾 Exportar Dados</button>
 
-  <!-- Corrigido: aceita arquivos .json no celular -->
   <input type="file" id="importar-arquivo" style="display:none" accept=".json,application/json,*/*" onchange="importarDados(event)">
   <button onclick="document.getElementById('importar-arquivo').click()">📥 Importar Dados</button>
 
-  <hr>
-<h2>Configurações de Tarifa 💧</h2>
-
-<form id="form-tarifa">
-  <label>
-    Tarifa mínima (até 10 m³):
-    <input type="number" step="0.01" id="tarifa-minimo" class="input-curto">
-  </label><br><br>
-
-  <label>
-    Tarifa por m³ de 11 a 20:
-    <input type="number" step="0.01" id="tarifa-11-20" class="input-curto">
-  </label><br><br>
-
-  <label>
-    Tarifa por m³ acima de 20:
-    <input type="number" step="0.01" id="tarifa-21-50" class="input-curto">
-  </label><br><br>
-
-  <button type="button" onclick="salvarConfiguracoesTarifa()">💾 Salvar Tarifas</button>
-</form>
-
-  
   <div id="blocos-container"></div>
+
+  <hr>
+
+  <h2>Configurações de Tarifa 💧</h2>
+
+  <form id="form-tarifa">
+    <label>
+      Tarifa mínima (até 10 m³):
+      <input type="number" step="0.01" id="tarifa-minimo" class="input-curto">
+    </label><br><br>
+
+    <label>
+      Tarifa por m³ de 11 a 20:
+      <input type="number" step="0.01" id="tarifa-11-20" class="input-curto">
+    </label><br><br>
+
+    <label>
+      Tarifa por m³ acima de 20:
+      <input type="number" step="0.01" id="tarifa-21-50" class="input-curto">
+    </label><br><br>
+
+    <button type="button" onclick="salvarConfiguracoesTarifa()">💾 Salvar Tarifas</button>
+  </form>
 
   <script src="script.js"></script>
 </body>
 </html>
-
-
-
-
-
