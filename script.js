@@ -1,4 +1,17 @@
 // script.js
+
+let tarifaConfig = carregarTarifas();
+
+// função que retorna as tarifas salvas ou padrão
+function carregarTarifas() {
+  const tarifasSalvas = JSON.parse(localStorage.getItem("tarifaConfig"));
+  return tarifasSalvas || {
+    minimo: 64.60,
+    faixa_11_20: 8.94,
+    faixa_21_50: 13.82
+  };
+}
+
 const tarifaConfig = {
   minimo: 64.60,
   faixa_11_20: 8.94,
@@ -474,6 +487,29 @@ function calcularValorEscalonado(m3) {
     return minimo + faixa2 + faixa3;
   }
 }
+
+function salvarConfiguracoesTarifa() {
+  const minimo = parseFloat(document.getElementById("tarifa-minimo").value);
+  const faixa_11_20 = parseFloat(document.getElementById("tarifa-11-20").value);
+  const faixa_21_50 = parseFloat(document.getElementById("tarifa-21-50").value);
+
+  tarifaConfig = {
+    minimo,
+    faixa_11_20,
+    faixa_21_50
+  };
+
+  localStorage.setItem("tarifaConfig", JSON.stringify(tarifaConfig));
+  alert("Tarifas salvas com sucesso!");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (document.getElementById("form-tarifa")) {
+    document.getElementById("tarifa-minimo").value = tarifaConfig.minimo;
+    document.getElementById("tarifa-11-20").value = tarifaConfig.faixa_11_20;
+    document.getElementById("tarifa-21-50").value = tarifaConfig.faixa_21_50;
+  }
+});
 
 
 
