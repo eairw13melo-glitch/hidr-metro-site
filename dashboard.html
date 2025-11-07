@@ -18,9 +18,14 @@
     </select>
   </div>
 
+  <div style="margin-top: 10px;">
+    <button onclick="adicionarApartamento()">+ Adicionar Apartamento</button>
+    <button onclick="resetarTudo()" style="background: red;">🗑️ Resetar Tudo</button>
+  </div>
+
   <div id="tabela-container"></div>
 
-  <!-- Modal -->
+  <!-- Modal de gerenciamento -->
   <div id="modal-blocos" class="modal" style="display:none;">
     <div class="modal-content">
       <span class="close" onclick="fecharModal()">&times;</span>
@@ -32,4 +37,3 @@
   <script src="script.js"></script>
 </body>
 </html>
-
