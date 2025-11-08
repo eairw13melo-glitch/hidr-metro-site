@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Boletos do Bloco</title>
+  <link rel="stylesheet" href="style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body class="boletos-body">
+  <script> if (localStorage.getItem("logado") !== "true") location.href = "index.html"; </script>
+
+  <header class="boletos-controls no-print">
+    <button class="voltar" onclick="history.back()">← Voltar</button>
+    <div class="ctrl-group">
+      <label>Vencimento:</label>
+      <input type="date" id="vencimento" />
+    </div>
+
+    <div class="ctrl-group">
+      <label>Origem:</label>
+      <select id="origem-dados">
+        <option value="atual">Leitura Atual</option>
+      </select>
+    </div>
+
+    <div class="ctrl-group">
+      <label>Filtrar por responsável (opcional):</label>
+      <input type="text" id="filtro-responsavel" placeholder="Ex.: Ana" />
+    </div>
+
+    <button onclick="atualizarBoletos()">Atualizar</button>
+    <button onclick="window.print()">🖨️ Imprimir</button>
+  </header>
+
+  <main id="boletos-root"></main>
+
+  <script src="script.js"></script>
+</body>
+</html>
