@@ -35,6 +35,15 @@ button:hover { background: var(--primary-hover); }
 .btn-danger { background: var(--danger); }
 .btn-danger:hover { background: var(--danger-hover); }
 
+.btn-danger-outline {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+}
+.btn-danger-outline:hover {
+  background: #fdecea;
+}
+
 .topbar {
   display: flex;
   flex-wrap: wrap;
