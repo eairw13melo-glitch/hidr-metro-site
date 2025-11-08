@@ -69,6 +69,8 @@ document.addEventListener("DOMContentLoaded", () => {
     renderizarListaDeBlocos();
   } else if (path.endsWith("bloco.html")) {
     renderizarBlocoIndividual();
+  } else if (path.endsWith("boletos.html")) {
+    renderizarBoletosPage();
   }
 });
 
@@ -623,10 +625,9 @@ function resetarBloco(id) {
   renderizarBlocoIndividual();
   alert("Bloco resetado.");
 }
-/* ==================== BOLETOS ==================== */
-/* Preenche o <select> de origem com os meses do histórico */
+
+/* ==================== BOLETOS (robusto) ==================== */
 function popularOrigemDadosBoletos(selectEl, bloco) {
-  // opção padrão já é "atual"
   const meses = Object.keys(bloco.historico || {}).sort().reverse();
   meses.forEach(m => {
     const opt = document.createElement('option');
@@ -635,28 +636,25 @@ function popularOrigemDadosBoletos(selectEl, bloco) {
     selectEl.appendChild(opt);
   });
 }
+function chunk(arr, size) { const out=[]; for (let i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size)); return out; }
+function brl(n) { return (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function escapeHtml(str){return String(str).replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));}
 
-/* Divide um array em chunks de N itens (para 2 por página) */
-function chunk(arr, size) {
-  const out = [];
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-  return out;
-}
-
-/* Formata número em BRL */
-function brl(n) {
-  const num = Number(n||0);
-  return num.toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
-}
-
-/* Render principal da página de boletos */
 function renderizarBoletosPage() {
-  const id = Number(new URLSearchParams(location.search).get("id"));
+  const root = document.getElementById('boletos-root');
+  if (!root) return;
+
+  const idParam = new URLSearchParams(location.search).get("id");
+  const id = Number(idParam);
+  if (Number.isNaN(id)) {
+    root.innerHTML = `<div style="padding:20px">ID do bloco ausente na URL. Abra os boletos pelo botão dentro do bloco.</div>`;
+    return;
+  }
+
   const blocos = carregarBlocos();
   const bloco = blocos[id];
   if (!bloco) {
-    document.getElementById('boletos-root').innerHTML =
-      `<div style="padding:20px">Bloco não encontrado.</div>`;
+    root.innerHTML = `<div style="padding:20px">Bloco (id=${escapeHtml(idParam)}) não encontrado.</div>`;
     return;
   }
 
@@ -666,130 +664,90 @@ function renderizarBoletosPage() {
   const inpFiltro = document.getElementById('filtro-responsavel');
 
   // defaults
-  if (!inpVenc.value) {
-    const d = new Date();
-    d.setDate(d.getDate() + 15);
-    inpVenc.valueAsDate = d; // vencimento padrão = +15 dias
+  if (inpVenc && !inpVenc.value) {
+    const d = new Date(); d.setDate(d.getDate()+15); inpVenc.valueAsDate = d;
   }
-  if (selOrigem && selOrigem.options.length === 1) {
-    popularOrigemDadosBoletos(selOrigem, bloco);
-  }
+  if (selOrigem && selOrigem.options.length === 1) popularOrigemDadosBoletos(selOrigem, bloco);
 
-  // seleciona fonte de dados
+  // fonte de dados
   let dados = [];
   const origem = selOrigem ? selOrigem.value : "atual";
-  if (origem === "atual") {
-    dados = (bloco.leitura_atual || []).slice();
-  } else if (origem.startsWith("hist:")) {
+  if (origem === "atual") dados = (bloco.leitura_atual || []).slice();
+  else if (origem.startsWith("hist:")) {
     const mes = origem.split(":")[1];
     dados = (bloco.historico?.[mes] || []).slice();
   }
 
-  // filtro (opcional)
+  // filtro
   const filtro = (inpFiltro?.value || "").trim().toLowerCase();
-  if (filtro) {
-    dados = dados.filter(a => (a.responsavel||"").toLowerCase().includes(filtro));
-  }
+  if (filtro) dados = dados.filter(a => (a.responsavel||"").toLowerCase().includes(filtro));
 
-  // ordena por número do hidrômetro
-  dados.sort((a,b)=> String(a.numero).localeCompare(String(b.numero), 'pt-BR', {numeric:true}));
+  // ordenar
+  dados.sort((a,b)=> String(a.numero).localeCompare(String(b.numero),'pt-BR',{numeric:true}));
 
-  // cria páginas com 2 boletos por folha
+  // quebrar em folhas (2 por)
   const grupos = chunk(dados, 2);
-  const root = document.getElementById('boletos-root');
   root.innerHTML = "";
 
   const vencLabel = (() => {
+    if (!inpVenc || !inpVenc.value) return "";
     const v = inpVenc.valueAsDate || new Date(inpVenc.value);
-    if (!v || isNaN(v)) return "";
-    return v.toLocaleDateString('pt-BR');
+    return isNaN(v) ? "" : v.toLocaleDateString('pt-BR');
   })();
+
+  if (grupos.length === 0) {
+    root.innerHTML = `<div style="padding:20px">Nenhum dado para gerar boletos.</div>`;
+    return;
+  }
 
   grupos.forEach(dupla => {
     const sheet = document.createElement('section');
     sheet.className = 'boleto-sheet';
-
-    // top half
-    sheet.appendChild(criarBoletoHalf(dupla[0], vencLabel, bloco));
-
-    // cut line
+    sheet.appendChild(criarBoletoHalf(dupla[0], vencLabel));
     const cut = document.createElement('div');
     cut.className = 'cut-line';
     cut.innerHTML = `<span>— — — — — — — — — — — — — —  ✂  — — — — — — — — — — — — — —</span>`;
     sheet.appendChild(cut);
-
-    // bottom half
-    sheet.appendChild(criarBoletoHalf(dupla[1], vencLabel, bloco));
-
+    sheet.appendChild(criarBoletoHalf(dupla[1], vencLabel));
     root.appendChild(sheet);
   });
-
-  // se não houver dados, mostra aviso
-  if (dados.length === 0) {
-    root.innerHTML = `<div style="padding:20px">Nenhum dado para gerar boletos.</div>`;
-  }
 }
 
-/* Cria a metade do boleto (um apartamento) */
-function criarBoletoHalf(apt, vencLabel, bloco) {
+function criarBoletoHalf(apt, vencLabel) {
   const half = document.createElement('div');
   half.className = 'boleto-half';
 
   if (!apt) {
-    // metade vazia (para páginas com apenas 1 boleto)
-    half.innerHTML = `<div class="boleto-head"><div class="apt">&nbsp;</div><div class="vcto">&nbsp;</div></div>
-                      <div class="boleto-lines"></div>
-                      <div class="boleto-total">
-                        <div class="cell">TOTAL</div>
-                        <div class="cell">VALOR &gt;</div>
-                        <div class="cell" style="grid-column: span 2;">&nbsp;</div>
-                      </div>
-                      <div class="boleto-obs"><div class="label">OBS:</div><div class="area"></div></div>`;
+    half.innerHTML = `
+      <div class="boleto-head"><div class="apt">&nbsp;</div><div class="vcto">&nbsp;</div></div>
+      <div class="boleto-lines"></div>
+      <div class="boleto-total">
+        <div class="cell">TOTAL</div><div class="cell">VALOR &gt;</div>
+        <div class="cell">&nbsp;</div><div class="cell">&nbsp;</div>
+      </div>
+      <div class="boleto-obs"><div class="label">OBS:</div><div class="area"></div></div>`;
     return half;
   }
 
   const valor = Number(apt.total_rs || 0);
-
   half.innerHTML = `
     <div class="boleto-head">
       <div class="apt">${escapeHtml(String(apt.numero || "APTO"))}</div>
       <div class="vcto">Vencimento &gt; ${vencLabel || "--/--/----"}</div>
     </div>
-
     <div class="boleto-lines"></div>
-
     <div class="boleto-total">
       <div class="cell">TOTAL</div>
       <div class="cell">VALOR &gt;</div>
-      <div class="cell" style="min-width:120px; text-align:right;">${brl(valor)}</div>
+      <div class="cell" style="min-width:120px;text-align:right;">${brl(valor)}</div>
       <div class="cell" style="min-width:40px;">&nbsp;</div>
     </div>
-
-    <div class="boleto-obs">
-      <div class="label">OBS:</div>
-      <div class="area">${escapeHtml(apt.obs || "")}</div>
-    </div>
-  `;
+    <div class="boleto-obs"><div class="label">OBS:</div><div class="area">${escapeHtml(apt.obs || "")}</div></div>`;
   return half;
 }
 
-/* botão Atualizar (nos controles da página) */
-function atualizarBoletos() {
-  renderizarBoletosPage();
+// botão Atualizar (nos controles da página de boletos)
+function atualizarBoletos(){ 
+  try { renderizarBoletosPage(); } 
+  catch(e){ console.error(e); alert("Erro ao gerar boletos. Veja o console para detalhes."); } 
 }
-
-/* pequena ajuda p/ escapar HTML */
-function escapeHtml(str) {
-  return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
-}
-
-/* hook na carga: se estiver em boletos.html, renderiza */
-document.addEventListener("DOMContentLoaded", () => {
-  if (location.pathname.endsWith("boletos.html")) {
-    renderizarBoletosPage();
-  }
-});
-
-
-
-
