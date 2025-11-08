@@ -419,6 +419,210 @@ function formatarMesLabel(mes) {
   return date.toLocaleString("pt-BR", { month: "long", year: "numeric" });
 }
 
-function salvarLeituraDoM es(blocoIndex) {
-  // NOTE: spaces in function name will break; corrected below
+function salvarLeituraDoMes(blocoIndex) {
+  const blocos = carregarBlocos();
+  const bloco = blocos[blocoIndex];
+  if (!bloco) { alert("Bloco não encontrado."); return; }
+
+  const base = mesAtual(); // YYYY-MM
+  let mes = base, i = 0;
+  bloco.historico = bloco.historico || {};
+  while (bloco.historico[mes]) { i++; mes = `${base}-${String.fromCharCode(96 + i)}`; }
+
+  // 1) Grava no histórico
+  bloco.historico[mes] = JSON.parse(JSON.stringify(bloco.leitura_atual || []));
+
+  // 2) Exporta Excel (se possível)
+  const fazerExport = () => {
+    const dados = bloco.historico[mes];
+    const wsData = [
+      ["Hidrômetro Nº","Responsável","Leitura Anterior","Leitura Atual","m³","R$","Observações"],
+      ...dados.map(apt => [
+        apt.numero, apt.responsavel, apt.leitura_anterior, apt.leitura_atual, apt.total_m3, `R$ ${apt.total_rs}`, apt.obs
+      ])
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Leitura");
+    const nomeArquivo = `Leitura_${(bloco.nome||"Bloco")}_${mes}.xlsx`.replace(/\s+/g, "_");
+    XLSX.writeFile(wb, nomeArquivo);
+  };
+
+  if (window.XLSX) {
+    try { fazerExport(); } catch (e) { console.error(e); alert("Falha ao exportar Excel, mas o histórico foi salvo."); }
+  } else {
+    alert("Histórico salvo. Para exportar Excel, verifique a conexão e recarregue a página (biblioteca não carregada).");
+  }
+
+  // 3) Prepara próxima rodada
+  bloco.leitura_atual = (bloco.leitura_atual || []).map(apt => ({
+    numero: apt.numero,
+    responsavel: apt.responsavel,
+    leitura_anterior: apt.leitura_atual,
+    leitura_atual: 0,
+    total_m3: 0,
+    total_rs: 0,
+    obs: ""
+  }));
+
+  salvarBlocos(blocos);
+  renderizarBlocoIndividual();
+  alert("Leitura salva no histórico.");
 }
+
+// ============== EXPORTAÇÃO / IMPORTAÇÃO ==============
+function checarXLSX(prontoCb) {
+  if (window.XLSX) { prontoCb(); return; }
+  alert("Biblioteca de planilhas não carregou.\nVerifique sua internet ou o bloqueio de scripts e tente novamente.");
+}
+
+function exportarParaExcel(dados, nomeBloco, mes) {
+  const worksheetData = [
+    ["Hidrômetro Nº","Responsável","Leitura Anterior","Leitura Atual","m³","R$","Observações"],
+    ...dados.map(apt => [
+      apt.numero,
+      apt.responsavel,
+      apt.leitura_anterior,
+      apt.leitura_atual,
+      apt.total_m3,
+      `R$ ${apt.total_rs}`,
+      apt.obs
+    ])
+  ];
+
+  const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Leitura");
+  const nomeArquivo = `Leitura_${nomeBloco}_${mes}.xlsx`.replace(/\s+/g, "_");
+  XLSX.writeFile(workbook, nomeArquivo);
+}
+
+function exportarLeituraAtual() {
+  checarXLSX(() => {
+    const blocos = carregarBlocos();
+    const id = Number(new URLSearchParams(window.location.search).get("id"));
+    const bloco = blocos[id];
+    if (!bloco) { alert("Bloco não encontrado."); return; }
+
+    const dados = bloco.leitura_atual || [];
+    const worksheetData = [
+      ["Hidrômetro Nº","Responsável","Leitura Anterior","Leitura Atual","m³","R$","Observações"],
+      ...dados.map(apt => [
+        apt.numero,
+        apt.responsavel,
+        apt.leitura_anterior,
+        apt.leitura_atual,
+        apt.total_m3,
+        `R$ ${apt.total_rs}`,
+        apt.obs
+      ])
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Leitura Atual");
+    const mes = mesAtual().replace("-", "_");
+    const nomeArquivo = `LeituraAtual_${(bloco.nome||"Bloco")}_${mes}.xlsx`.replace(/\s+/g, "_");
+    XLSX.writeFile(wb, nomeArquivo);
+  });
+}
+
+function importarLeituraAtual(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, { type: "array" });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+
+    const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+    const blocos = carregarBlocos();
+    const id = Number(new URLSearchParams(window.location.search).get("id"));
+    const bloco = blocos[id];
+    const tarifa = getTarifa(bloco);
+
+    json.forEach((row, index) => {
+      if (!bloco.leitura_atual[index]) return;
+
+      const ant = Number(row["Leitura Anterior"]) || 0;
+      const atu = Number(row["Leitura Atual"]) || 0;
+      const m3 = Math.max(0, atu - ant);
+
+      const apt = bloco.leitura_atual[index];
+      apt.numero = row["Hidrômetro Nº"] || apt.numero;
+      apt.responsavel = row["Responsável"] || "";
+      apt.leitura_anterior = ant;
+      apt.leitura_atual = atu;
+      apt.total_m3 = m3;
+      apt.total_rs = calcularValorEscalonado(m3, tarifa).toFixed(2);
+      apt.obs = row["Observações"] || "";
+    });
+
+    salvarBlocos(blocos);
+    alert("Leitura importada com sucesso!");
+    renderizarBlocoIndividual();
+  };
+
+  reader.readAsArrayBuffer(file);
+}
+
+function exportarDados() {
+  const dados = localStorage.getItem("blocos") || "[]";
+  const blob = new Blob([dados], { type: "application/json" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "blocos_hidrometro.json";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function importarDados(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    try {
+      const dados = JSON.parse(e.target.result);
+      localStorage.setItem("blocos", JSON.stringify(dados));
+      alert("Dados importados com sucesso!");
+      location.reload();
+    } catch (error) {
+      alert("Erro ao importar dados. Verifique o arquivo.");
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ============== RESET ==============
+function resetarBlocoPerguntar() {
+  const id = Number(new URLSearchParams(location.search).get("id"));
+  const blocos = carregarBlocos();
+  const bloco = blocos[id];
+  if (!bloco) return;
+
+  const count = bloco.leitura_atual?.length || 0;
+  if (confirm(`Isso vai apagar a leitura atual e histórico do bloco "${bloco.nome}" (${count} apartamentos). Deseja continuar?`)) {
+    resetarBloco(id);
+  }
+}
+function resetarBloco(id) {
+  const blocos = carregarBlocos();
+  const bloco = blocos[id];
+  if (!bloco) return;
+
+  bloco.leitura_atual = [];
+  bloco.historico = {};
+  // mantém tarifaConfig do bloco
+  salvarBlocos(blocos);
+  renderizarBlocoIndividual();
+  alert("Bloco resetado.");
+}
+
+
+
