@@ -1,3 +1,10 @@
+<!-- 
+  Projeto: Leitura de Hidrômetro
+  Versão: v1.0.0
+  Data: 10/11/2025
+  Descrição: Dashboard principal com lista de blocos.
+-->
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -16,18 +23,13 @@
     <div class="topbar-actions">
       <button type="button" onclick="criarBloco()">+ Adicionar Bloco</button>
       <button type="button" onclick="exportarDados()">💾 Exportar Dados</button>
-
       <input type="file" id="importar-arquivo" accept=".json,application/json" style="display:none" onchange="importarDados(event)" />
       <button type="button" onclick="document.getElementById('importar-arquivo').click()">📥 Importar Dados</button>
-
       <button type="button" class="btn-danger" onclick="logout()">Sair</button>
     </div>
   </header>
 
-  <main id="blocos-container">
-    <!-- Renderizado dinamicamente por script.js -->
-  </main>
-
+  <main id="blocos-container"></main>
   <script src="script.js"></script>
 </body>
 </html>
