@@ -1,6 +1,10 @@
-/* =========================================================
-   LEITURA DE HIDRÔMETRO - Layout Moderno e Responsivo
-   ========================================================= */
+/* =====================================================
+   Projeto: Leitura de Hidrômetro
+   Versão: v1.0.0
+   Data: 10/11/2025
+   Descrição: Estilo moderno e responsivo (tema azul)
+===================================================== */
+
 :root {
   --azul: #2563eb;
   --azul-escuro: #1e3a8a;
@@ -240,3 +244,4 @@ input:focus, select:focus {
     background: white;
   }
 }
+
