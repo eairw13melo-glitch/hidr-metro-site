@@ -1,3 +1,23 @@
+// Função para salvar dados no localStorage com tratamento de erros
+function saveData(key, data) {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (error) {
+    console.error("Erro ao salvar dados:", error);
+    alert("Falha ao salvar dados. Verifique as permissões do navegador.");
+  }
+}
+
+// Função para carregar dados do localStorage com tratamento de erros
+function loadData(key) {
+  try {
+    return JSON.parse(localStorage.getItem(key)) || [];
+  } catch (error) {
+    console.error("Erro ao carregar dados:", error);
+    return [];
+  }
+}
+
 // ============== AUTH BÁSICA ==============
 const user = { username: "admin", password: "1234" };
 
@@ -751,3 +771,4 @@ function atualizarBoletos(){
   try { renderizarBoletosPage(); } 
   catch(e){ console.error(e); alert("Erro ao gerar boletos. Veja o console para detalhes."); } 
 }
+
