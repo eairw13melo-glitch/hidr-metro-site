@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
-  <title>Dashboard - Leitura de Hidrômetro</title>
+  <title>Dashboard | Leitura de Hidrômetro</title>
   <link rel="stylesheet" href="style.css" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
@@ -12,18 +12,30 @@
     if (localStorage.getItem("logado") !== "true") location.href = "index.html";
   </script>
 
+  <!-- Cabeçalho principal -->
   <header class="topbar">
     <h1>Blocos Cadastrados</h1>
     <div class="topbar-actions">
       <button type="button" onclick="criarBloco()">+ Adicionar Bloco</button>
       <button type="button" onclick="exportarDados()">💾 Exportar Dados</button>
-      <input type="file" id="importar-arquivo" accept=".json,application/json" style="display:none" onchange="importarDados(event)" />
+
+      <input
+        type="file"
+        id="importar-arquivo"
+        accept=".json,application/json"
+        style="display:none"
+        onchange="importarDados(event)"
+      />
       <button type="button" onclick="document.getElementById('importar-arquivo').click()">📥 Importar Dados</button>
+
       <button type="button" class="btn-danger" onclick="logout()">Sair</button>
     </div>
   </header>
 
-  <div id="blocos-container"></div>
+  <!-- Conteúdo principal -->
+  <main id="blocos-container">
+    <!-- Renderizado dinamicamente por script.js -->
+  </main>
 
   <script src="script.js"></script>
 </body>
