@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
-  <title>Login | Leitura de Hidrômetro</title>
+  <title>Login Seguro | Leitura de Hidrômetro</title>
   <link rel="stylesheet" href="style.css" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
@@ -19,16 +19,25 @@
         required
       />
 
-      <label for="password" class="sr-only">Senha</label>
-      <input
-        type="password"
-        id="password"
-        placeholder="Senha"
-        autocomplete="current-password"
-        required
-      />
+      <div style="position: relative;">
+        <label for="password" class="sr-only">Senha</label>
+        <input
+          type="password"
+          id="password"
+          placeholder="Senha"
+          autocomplete="current-password"
+          required
+          style="width:100%;"
+        />
+        <button
+          type="button"
+          id="togglePass"
+          aria-label="Mostrar ou ocultar senha"
+          style="position:absolute; right:8px; top:6px; border:none; background:transparent; cursor:pointer;"
+        >👁️</button>
+      </div>
 
-      <button type="submit">Entrar</button>
+      <button type="submit" id="btn-login">Entrar</button>
     </form>
 
     <p id="login-error" class="error" aria-live="polite"></p>
@@ -38,6 +47,6 @@
     </footer>
   </main>
 
-  <script src="script.js"></script>
+  <script src="login-seguro.js"></script>
 </body>
 </html>
