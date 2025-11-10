@@ -839,3 +839,59 @@ function calcularValor() {
   // Atualiza o campo de valor total
   document.getElementById("valorTotal").value = valorTotal.toFixed(2);
 }
+// Função para calcular o valor total a ser pago
+function calcularValor() {
+  const consumo = parseFloat(document.getElementById("consumo").value); // Consumo em m³
+  const valorMinimo = parseFloat(document.getElementById("valorMinimo").value); // Valor mínimo em R$
+  const valorM3 = parseFloat(document.getElementById("valorM3").value); // Valor por m³ excedente
+
+  if (isNaN(consumo) || isNaN(valorMinimo) || isNaN(valorM3)) {
+    document.getElementById("valorTotal").value = "Preencha todos os campos corretamente!";
+    return;
+  }
+
+  let valorTotal = valorMinimo; // Começa com o valor mínimo
+
+  // Se o consumo for maior que 10m³, calcular o excedente
+  if (consumo > 10) {
+    const excedente = consumo - 10; // Subtrai os 10m³ que já estão inclusos no valor mínimo
+    valorTotal += excedente * valorM3; // Soma o valor do excedente
+  }
+
+  // Atualiza o campo de valor total
+  document.getElementById("valorTotal").value = valorTotal.toFixed(2);
+}
+
+// Função para atualizar o texto explicativo
+function atualizarTextoExplicativo() {
+  const consumo = parseFloat(document.getElementById("consumo").value); // Consumo em m³
+  const valorMinimo = parseFloat(document.getElementById("valorMinimo").value); // Valor mínimo em R$
+  const valorM3 = parseFloat(document.getElementById("valorM3").value); // Valor por m³ excedente
+
+  let textoExplicativo = "<h3>Como é feito o cálculo:</h3>";
+
+  if (isNaN(consumo) || isNaN(valorMinimo) || isNaN(valorM3)) {
+    textoExplicativo += "<p>Por favor, preencha todos os campos corretamente para calcular o valor.</p>";
+    document.getElementById("textoExplicativo").innerHTML = textoExplicativo;
+    return;
+  }
+
+  // Caso o consumo seja menor ou igual a 10m³
+  if (consumo <= 10) {
+    textoExplicativo += `<p>Se o consumo for de até 10 m³, o valor a ser pago será o valor mínimo: R$ ${valorMinimo.toFixed(2)}.</p>`;
+  } else {
+    // Caso o consumo seja maior que 10m³
+    const excedente = consumo - 10;
+    const valorExcedente = excedente * valorM3;
+    const valorTotal = valorMinimo + valorExcedente;
+
+    textoExplicativo += `<p>Se o consumo for superior a 10 m³, o valor excedente será calculado.`;
+    textoExplicativo += ` O valor excedente é dado por (Consumo - 10) * Valor por m³.`;
+    textoExplicativo += ` Neste exemplo, com um consumo de ${consumo} m³, temos um valor excedente de ${excedente} m³.`;
+    textoExplicativo += ` O cálculo do valor excedente será: ${excedente} * R$ ${valorM3.toFixed(2)} = R$ ${valorExcedente.toFixed(2)}.`;
+    textoExplicativo += ` O total a ser pago será: R$ ${valorExcedente.toFixed(2)} + R$ ${valorMinimo.toFixed(2)} = R$ ${valorTotal.toFixed(2)}.</p>`;
+  }
+
+  document.getElementById("textoExplicativo").innerHTML = textoExplicativo;
+}
+
