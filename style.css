@@ -1,6 +1,6 @@
 /* =====================================================
    Projeto: Leitura de Hidrômetro
-   Versão: v1.0.0
+   Versão: v1.1.0
    Data: 10/11/2025
    Descrição: Estilo moderno e responsivo (tema azul)
 ===================================================== */
@@ -302,5 +302,6 @@ input:focus, select:focus {
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
 }
+
 
 
