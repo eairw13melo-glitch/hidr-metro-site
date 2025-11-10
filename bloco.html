@@ -5,10 +5,97 @@
   <title>Leituras do Bloco | Leitura de Hidrômetro</title>
   <link rel="stylesheet" href="style.css" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
 </head>
 <body>
   <script>
     if (localStorage.getItem("logado") !== "true") location.href = "index.html";
+
+    // Verifica se a biblioteca XLSX foi carregada corretamente
+    if (typeof XLSX === 'undefined') {
+      alert("Biblioteca XLSX não carregada. Verifique a conexão ou recarregue a página.");
+    }
+
+    // Corrige o botão de exportação
+    function exportarLeituraAtual() {
+      if (typeof XLSX === 'undefined') {
+        alert("Biblioteca XLSX não carregada.");
+        return;
+      }
+
+      const blocos = carregarBlocos();
+      const id = Number(new URLSearchParams(window.location.search).get("id"));
+      const bloco = blocos[id];
+      if (!bloco) {
+        alert("Bloco não encontrado.");
+        return;
+      }
+
+      const dados = bloco.leitura_atual || [];
+      const worksheetData = [
+        ["Hidrômetro Nº","Responsável","Leitura Anterior","Leitura Atual","m³","R$","Observações"],
+        ...dados.map(apt => [
+          apt.numero,
+          apt.responsavel,
+          apt.leitura_anterior,
+          apt.leitura_atual,
+          apt.total_m3,
+          `R$ ${apt.total_rs}`,
+          apt.obs
+        ])
+      ];
+
+      const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Leitura Atual");
+      const mes = mesAtual().replace("-", "_");
+      const nomeArquivo = `LeituraAtual_${(bloco.nome||"Bloco")}_${mes}.xlsx`.replace(/\s+/g, "_");
+      XLSX.writeFile(wb, nomeArquivo);
+    }
+
+    // Importação de leitura
+    function importarLeituraAtual(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+
+        const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+        const blocos = carregarBlocos();
+        const id = Number(new URLSearchParams(location.search).get("id"));
+        const bloco = blocos[id];
+        const tarifa = getTarifa(bloco);
+
+        json.forEach((row, index) => {
+          if (!bloco.leitura_atual[index]) return;
+
+          const ant = Number(row["Leitura Anterior"]) || 0;
+          const atu = Number(row["Leitura Atual"]) || 0;
+          const m3 = Math.max(0, atu - ant);
+
+          const apt = bloco.leitura_atual[index];
+          apt.numero = row["Hidrômetro Nº"] || apt.numero;
+          apt.responsavel = row["Responsável"] || "";
+          apt.leitura_anterior = ant;
+          apt.leitura_atual = atu;
+          apt.total_m3 = m3;
+          apt.total_rs = calcularValorEscalonado(m3, tarifa).toFixed(2);
+          apt.obs = row["Observações"] || "";
+        });
+
+        salvarBlocos(blocos);
+        alert("Leitura importada com sucesso!");
+        renderizarBlocoIndividual();
+      };
+
+      reader.readAsArrayBuffer(file);
+    }
   </script>
 
   <div class="toolbar">
@@ -23,7 +110,6 @@
   </div>
 
   <main id="bloco-detalhes" class="conteudo">
-    <!-- Início da Calculadora de Conta de Água -->
     <div class="calculator-container">
       <h2>Calculadora de Conta de Água</h2>
       <p>Preencha os campos abaixo para calcular o valor da sua conta.</p>
@@ -48,20 +134,14 @@
         <input type="text" id="valorTotal" readonly />
       </div>
     </div>
-    <!-- Fim da Calculadora de Conta de Água -->
 
-    <!-- Texto Explicativo -->
-    <div id="textoExplicativo" class="result-box">
-      <!-- O texto explicativo será atualizado aqui -->
-    </div>
+    <div id="textoExplicativo" class="result-box"></div>
 
-    <!-- Link para enviar o texto explicativo via WhatsApp -->
     <div>
       <a id="whatsappLink" href="#" target="_blank">
         <button>Enviar cálculo via WhatsApp</button>
       </a>
     </div>
-
   </main>
 
   <script src="script.js"></script>
