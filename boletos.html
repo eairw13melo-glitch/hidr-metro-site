@@ -7,12 +7,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
 <body class="boletos-body">
-  <!-- Proteção de rota -->
   <script>
     if (localStorage.getItem("logado") !== "true") location.href = "index.html";
   </script>
 
-  <!-- Barra de controles (não imprime) -->
   <header class="boletos-controls no-print">
     <button class="voltar" aria-label="Voltar para o bloco anterior" onclick="history.back()">← Voltar</button>
 
@@ -37,7 +35,6 @@
     <button type="button" onclick="window.print()">🖨️ Imprimir</button>
   </header>
 
-  <!-- Conteúdo principal -->
   <main id="boletos-root">
     <div style="padding:20px;color:#555">
       Carregando boletos… se esta mensagem não sumir, verifique se o arquivo <code>script.js</code> está sendo encontrado.
