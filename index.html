@@ -1,3 +1,10 @@
+<!-- 
+  Projeto: Leitura de Hidrômetro
+  Versão: v1.0.0
+  Data: 10/11/2025
+  Descrição: Tela de login segura e responsiva.
+-->
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -11,30 +18,12 @@
     <h2>🔑 Acesso ao Sistema</h2>
     <form id="login-form" autocomplete="on">
       <label for="username" class="sr-only">Usuário</label>
-      <input
-        type="text"
-        id="username"
-        placeholder="Usuário"
-        autocomplete="username"
-        required
-      />
+      <input type="text" id="username" placeholder="Usuário" autocomplete="username" required />
 
       <div style="position: relative;">
         <label for="password" class="sr-only">Senha</label>
-        <input
-          type="password"
-          id="password"
-          placeholder="Senha"
-          autocomplete="current-password"
-          required
-          style="width:100%;"
-        />
-        <button
-          type="button"
-          id="togglePass"
-          aria-label="Mostrar ou ocultar senha"
-          style="position:absolute; right:8px; top:6px; border:none; background:transparent; cursor:pointer;"
-        >👁️</button>
+        <input type="password" id="password" placeholder="Senha" autocomplete="current-password" required style="width:100%;" />
+        <button type="button" id="togglePass" aria-label="Mostrar ou ocultar senha" style="position:absolute; right:8px; top:6px; border:none; background:transparent; cursor:pointer;">👁️</button>
       </div>
 
       <button type="submit" id="btn-login">Entrar</button>
