@@ -1,6 +1,6 @@
 // =====================================================
 // Projeto: Leitura de Hidrômetro
-// Versão: v1.1.0
+// Versão: v1.0.0
 // Data: 10/11/2025
 // Descrição: Lógica de autenticação segura com hash, bloqueio e token.
 // =====================================================
