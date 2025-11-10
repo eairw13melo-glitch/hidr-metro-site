@@ -7,19 +7,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
 <body>
-  <div class="login-container">
-    <h2>Login</h2>
-    <form id="login-form">
-      <input type="text" id="username" placeholder="Usuário" autocomplete="username" required />
-      <input type="password" id="password" placeholder="Senha" autocomplete="current-password" required />
+  <main class="login-container">
+    <h2>🔑 Acesso ao Sistema</h2>
+    <form id="login-form" autocomplete="on">
+      <label for="username" class="sr-only">Usuário</label>
+      <input
+        type="text"
+        id="username"
+        placeholder="Usuário"
+        autocomplete="username"
+        required
+      />
+
+      <label for="password" class="sr-only">Senha</label>
+      <input
+        type="password"
+        id="password"
+        placeholder="Senha"
+        autocomplete="current-password"
+        required
+      />
+
       <button type="submit">Entrar</button>
     </form>
+
     <p id="login-error" class="error" aria-live="polite"></p>
-  </div>
+
+    <footer style="margin-top: 16px; font-size: 0.85rem; color: #666;">
+      <p>Login padrão: <strong>admin / 1234</strong></p>
+    </footer>
+  </main>
 
   <script src="script.js"></script>
 </body>
 </html>
-
-
-
