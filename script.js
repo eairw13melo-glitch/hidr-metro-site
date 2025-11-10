@@ -18,6 +18,51 @@ function loadData(key) {
   }
 }
 
+// Função de debounce para evitar múltiplas chamadas rápidas de uma função
+let debounceTimeout;
+function debounce(func, delay) {
+  clearTimeout(debounceTimeout);
+  debounceTimeout = setTimeout(func, delay);
+}
+
+// Função genérica de exportação para Excel
+function exportToXLSX(data, fileName, sheetName = "Leitura") {
+  if (!window.XLSX) {
+    alert("Biblioteca XLSX não carregada. Verifique a sua conexão ou recarregue a página.");
+    return;
+  }
+
+  const worksheet = XLSX.utils.aoa_to_sheet(data);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+  const file = fileName.replace(/\s+/g, "_");
+
+  try {
+    XLSX.writeFile(workbook, `${file}.xlsx`);
+  } catch (error) {
+    console.error("Erro ao exportar para Excel:", error);
+    alert("Erro ao gerar o arquivo de Excel.");
+  }
+}
+
+// Função para exibir mensagens de sucesso ou erro (Toast)
+function showToast(message, isError = false) {
+  const toast = document.createElement("div");
+  toast.className = `toast ${isError ? "error" : "success"}`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000); // Remove a mensagem após 3 segundos
+}
+
+// Função de salvar blocos com debounce
+function salvarBlocos(blocos) {
+  debounce(() => {
+    saveData("blocos", blocos);
+    showToast("Blocos salvos com sucesso!");
+  }, 500);
+}
+
+
 // ============== AUTH BÁSICA ==============
 const user = { username: "admin", password: "1234" };
 
@@ -771,4 +816,5 @@ function atualizarBoletos(){
   try { renderizarBoletosPage(); } 
   catch(e){ console.error(e); alert("Erro ao gerar boletos. Veja o console para detalhes."); } 
 }
+
 
