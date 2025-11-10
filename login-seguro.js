@@ -1,10 +1,3 @@
-// =====================================================
-// Projeto: Leitura de Hidrômetro
-// Versão: v1.0.0
-// Data: 10/11/2025
-// Descrição: Lógica de autenticação segura com hash, bloqueio e token.
-// =====================================================
-
 const usuarioSalvo = {
   username: "admin",
   passwordHash: "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4" // hash de '1234'
@@ -60,6 +53,7 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
 
   if (estaBloqueado()) {
     erroEl.textContent = "Login temporariamente bloqueado. Aguarde um minuto.";
+    showToast("Login temporariamente bloqueado. Aguarde um minuto.", true);
     return;
   }
 
@@ -67,6 +61,7 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
   const password = document.getElementById("password").value;
   if (!username || !password) {
     erroEl.textContent = "Preencha usuário e senha.";
+    showToast("Preencha usuário e senha.", true);
     return;
   }
 
@@ -80,10 +75,21 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
     sessionStorage.setItem("token", gerarToken());
     localStorage.setItem("logado", "true");
     location.href = "dashboard.html";
+    showToast("Login realizado com sucesso!");
   } else {
     registrarTentativaFalha();
     erroEl.textContent = "Credenciais inválidas.";
+    showToast("Credenciais inválidas.", true);
   }
 
   document.getElementById("btn-login").disabled = false;
 });
+
+// Função para exibir mensagens de sucesso ou erro (Toast)
+function showToast(message, isError = false) {
+  const toast = document.createElement("div");
+  toast.className = `toast ${isError ? "error" : "success"}`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000); // Remove a mensagem após 3 segundos
+}
