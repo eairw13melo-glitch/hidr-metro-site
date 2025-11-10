@@ -7,32 +7,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
 <body>
-  <!-- Proteção de rota -->
   <script>
     if (localStorage.getItem("logado") !== "true") location.href = "index.html";
   </script>
 
-  <!-- Cabeçalho principal -->
   <header class="topbar">
     <h1>Blocos Cadastrados</h1>
     <div class="topbar-actions">
       <button type="button" onclick="criarBloco()">+ Adicionar Bloco</button>
       <button type="button" onclick="exportarDados()">💾 Exportar Dados</button>
 
-      <input
-        type="file"
-        id="importar-arquivo"
-        accept=".json,application/json"
-        style="display:none"
-        onchange="importarDados(event)"
-      />
+      <input type="file" id="importar-arquivo" accept=".json,application/json" style="display:none" onchange="importarDados(event)" />
       <button type="button" onclick="document.getElementById('importar-arquivo').click()">📥 Importar Dados</button>
 
       <button type="button" class="btn-danger" onclick="logout()">Sair</button>
     </div>
   </header>
 
-  <!-- Conteúdo principal -->
   <main id="blocos-container">
     <!-- Renderizado dinamicamente por script.js -->
   </main>
