@@ -1,9 +1,9 @@
 // =====================================================
 // Projeto: Leitura de Hidrômetro
-// Versão: v1.1.1
+// Versão: v1.1.0
 // Data: 10/11/2025
 // Descrição: Código principal — cálculo simplificado (mínimo + excedente),
-// com CRUD de blocos, leituras, histórico e boletos.
+// correções de renderização e importação de planilhas.
 // =====================================================
 
 // ============== AUTH BÁSICA ==============
@@ -18,11 +18,11 @@ function logout() {
 }
 
 // ============== TARIFAS POR BLOCO ==============
-const DEFAULT_TARIFA = { minimo: 64.60, faixa_11_20: 8.94, faixa_21_50: 13.82 };
+const DEFAULT_TARIFA = { minimo: 64.6, faixa_11_20: 8.94, faixa_21_50: 13.82 };
 
-// NOVO CÁLCULO SIMPLIFICADO — v1.1.1
+// NOVO CÁLCULO SIMPLIFICADO (mínimo + excedente)
 function calcularValorEscalonado(m3, tarifa) {
-  const { minimo, faixa_11_20 } = tarifa; // faixa_11_20 = valor por m³ excedente
+  const { minimo, faixa_11_20 } = tarifa; // faixa_11_20 = valor excedente
   if (m3 <= 10) return minimo;
   return minimo + (m3 - 10) * faixa_11_20;
 }
@@ -34,13 +34,17 @@ function setTarifa(bloco, valores) {
   bloco.tarifaConfig = {
     minimo: Number(valores.minimo) || 0,
     faixa_11_20: Number(valores.faixa_11_20) || 0,
-    faixa_21_50: Number(valores.faixa_21_50) || 0
+    faixa_21_50: 0
   };
 }
 
 // ============== STORAGE HELPERS ==============
 function carregarBlocos() {
-  return JSON.parse(localStorage.getItem("blocos")) || [];
+  try {
+    return JSON.parse(localStorage.getItem("blocos")) || [];
+  } catch {
+    return [];
+  }
 }
 function salvarBlocos(blocos) {
   localStorage.setItem("blocos", JSON.stringify(blocos));
@@ -71,21 +75,15 @@ document.addEventListener("DOMContentLoaded", () => {
   // Páginas internas exigem login
   if (!isLogged()) return;
 
-  // Roteamento simples
-  if (path.endsWith("dashboard.html")) {
-    renderizarListaDeBlocos();
-  } else if (path.endsWith("bloco.html")) {
-    renderizarBlocoIndividual();
-  } else if (path.endsWith("boletos.html")) {
-    renderizarBoletosPage();
-  }
+  if (path.endsWith("dashboard.html")) renderizarListaDeBlocos();
+  if (path.endsWith("bloco.html")) renderizarBlocoIndividual();
+  if (path.endsWith("boletos.html")) renderizarBoletosPage();
 });
 
 // ============== CRUD DE BLOCOS ==============
 function criarBloco() {
   const nome = prompt("Nome do novo bloco:");
   if (!nome) return;
-
   const endereco = prompt("Endereço do bloco:") || "";
   const sindico = prompt("Síndico:") || "";
 
@@ -95,7 +93,6 @@ function criarBloco() {
     return;
   }
 
-  // Pré-popula 32 apartamentos
   const leitura_atual = [];
   for (let i = 1; i <= 32; i++) {
     leitura_atual.push({
@@ -128,11 +125,7 @@ function renderizarListaDeBlocos() {
   container.innerHTML = "";
 
   if (blocos.length === 0) {
-    container.innerHTML = `
-      <div class="bloco">
-        <p>Nenhum bloco cadastrado ainda.</p>
-        <button onclick="criarBloco()">+ Adicionar Bloco</button>
-      </div>`;
+    container.innerHTML = `<div class="bloco"><p>Nenhum bloco cadastrado ainda.</p><button onclick="criarBloco()">+ Adicionar Bloco</button></div>`;
     return;
   }
 
@@ -154,24 +147,11 @@ function renderizarListaDeBlocos() {
 
 function excluirBloco(index) {
   const blocos = carregarBlocos();
-  const bloco = blocos[index];
-  if (!bloco) { alert("Bloco não encontrado."); return; }
-
-  const qtdApt = bloco.leitura_atual?.length || 0;
-  const qtdMeses = Object.keys(bloco.historico || {}).length;
-
-  const ok = confirm(
-    `Excluir o bloco "${bloco.nome}"?\n\n` +
-    `• Apartamentos cadastrados: ${qtdApt}\n` +
-    `• Meses no histórico: ${qtdMeses}\n\n` +
-    `Esta ação não pode ser desfeita.`
-  );
-  if (!ok) return;
-
+  if (!blocos[index]) return;
+  if (!confirm("Excluir este bloco?")) return;
   blocos.splice(index, 1);
   salvarBlocos(blocos);
   renderizarListaDeBlocos();
-  alert("Bloco excluído com sucesso.");
 }
 
 // ============== PÁGINA DO BLOCO ==============
@@ -179,81 +159,102 @@ function renderizarBlocoIndividual() {
   const blocos = carregarBlocos();
   const id = Number(new URLSearchParams(location.search).get("id"));
   const bloco = blocos[id];
-
   const container = document.getElementById("bloco-detalhes");
-  if (!container) return;
 
+  if (!container) return;
   if (!bloco) {
     container.innerHTML = `<div class="bloco"><h2>Bloco não encontrado.</h2></div>`;
     return;
   }
 
-  if (!bloco.leitura_atual) bloco.leitura_atual = [];
-  if (!bloco.historico) bloco.historico = {};
-  if (!bloco.tarifaConfig) bloco.tarifaConfig = { ...DEFAULT_TARIFA };
+  // Garantir integridade de dados
+  bloco.leitura_atual ||= [];
+  bloco.historico ||= {};
+  bloco.tarifaConfig ||= { ...DEFAULT_TARIFA };
   salvarBlocos(blocos);
+
+  const tarifa = getTarifa(bloco);
 
   container.innerHTML = `
     <div class="bloco">
       <h2>${bloco.nome}</h2>
       <p><strong>Endereço:</strong> ${bloco.endereco || "-"}</p>
       <p><strong>Síndico:</strong> ${bloco.sindico || "-"}</p>
+      <p style="color:#1e3a8a"><strong>💧 Fórmula ativa:</strong> mínimo + excedente fixo</p>
 
-      <h3 style="margin-top:10px;">Configurações de Tarifa 💧</h3>
-      <form class="tarifa-form" onsubmit="return false;">
-        <label for="tarifa-minimo-bloco">Tarifa mínima (até 10 m³):</label>
-        <input type="number" step="0.01" id="tarifa-minimo-bloco" class="input-curto">
-
-        <label for="tarifa-11-20-bloco">Valor por m³ excedente:</label>
-        <input type="number" step="0.01" id="tarifa-11-20-bloco" class="input-curto">
-
+      <h3>Configurações de Tarifa</h3>
+      <form onsubmit="return false;">
+        <label>Tarifa mínima (até 10 m³):</label>
+        <input type="number" step="0.01" id="tarifa-minimo-bloco" value="${tarifa.minimo}">
+        <label>Valor por m³ excedente:</label>
+        <input type="number" step="0.01" id="tarifa-11-20-bloco" value="${tarifa.faixa_11_20}">
         <button type="button" onclick="salvarTarifaDoBloco(${id})">💾 Salvar Tarifas</button>
       </form>
 
       <div class="acoes">
-        <button type="button" onclick="adicionarApartamentoDireto(${id})">+ Adicionar Apartamento</button>
-        <button type="button" onclick="salvarLeituraDoMes(${id})">💾 Salvar Leitura do Mês</button>
+        <button onclick="adicionarApartamentoDireto(${id})">+ Adicionar Apartamento</button>
+        <button onclick="salvarLeituraDoMes(${id})">💾 Salvar Leitura do Mês</button>
       </div>
 
-      <h3 style="margin-top:10px;">📌 Leitura Atual (${mesAtualLabel()})</h3>
+      <h3>📌 Leitura Atual (${mesAtualLabel()})</h3>
       ${gerarTabelaLeituraAtual(bloco, id)}
     </div>
 
-    <h3 style="margin-top:18px;">📚 Histórico de Leituras</h3>
+    <h3>📚 Histórico de Leituras</h3>
     ${gerarHistorico(bloco)}
   `;
-
-  preencherTarifaForm(bloco);
 }
 
-function preencherTarifaForm(bloco) {
-  const t = getTarifa(bloco);
-  document.getElementById("tarifa-minimo-bloco").value = t.minimo;
-  document.getElementById("tarifa-11-20-bloco").value = t.faixa_11_20;
+// ============== TABELAS E HISTÓRICO ==============
+function gerarTabelaLeituraAtual(bloco, blocoIndex) {
+  return `
+    <table>
+      <thead>
+        <tr>
+          <th>Hidrômetro Nº</th>
+          <th>Responsável</th>
+          <th>Anterior</th>
+          <th>Atual</th>
+          <th>m³</th>
+          <th>R$</th>
+          <th>Obs</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${bloco.leitura_atual.map((apt, i) => `
+          <tr>
+            <td><input type="text" value="${apt.numero}" onchange="editarCampo(${blocoIndex},${i},'numero',this.value)"></td>
+            <td><input type="text" value="${apt.responsavel}" onchange="editarCampo(${blocoIndex},${i},'responsavel',this.value)"></td>
+            <td><input type="number" value="${apt.leitura_anterior}" onchange="editarCampo(${blocoIndex},${i},'leitura_anterior',Number(this.value))"></td>
+            <td><input type="number" value="${apt.leitura_atual}" oninput="atualizarCampo(${blocoIndex},${i},this.value)"></td>
+            <td id="m3-${blocoIndex}-${i}">${apt.total_m3}</td>
+            <td><input type="text" id="rs-${blocoIndex}-${i}" value="R$ ${apt.total_rs}" readonly></td>
+            <td><input type="text" value="${apt.obs}" onchange="editarCampo(${blocoIndex},${i},'obs',this.value)"></td>
+          </tr>`).join("")}
+      </tbody>
+    </table>`;
 }
 
-function salvarTarifaDoBloco(blocoIndex) {
-  const blocos = carregarBlocos();
-  const bloco = blocos[blocoIndex];
-
-  setTarifa(bloco, {
-    minimo: document.getElementById("tarifa-minimo-bloco").value,
-    faixa_11_20: document.getElementById("tarifa-11-20-bloco").value,
-    faixa_21_50: 0
-  });
-
-  const tarifa = getTarifa(bloco);
-  bloco.leitura_atual = bloco.leitura_atual.map(apt => {
-    apt.total_rs = calcularValorEscalonado(apt.total_m3, tarifa).toFixed(2);
-    return apt;
-  });
-
-  salvarBlocos(blocos);
-  alert("Tarifas salvas com sucesso!");
-  renderizarBlocoIndividual();
+function gerarHistorico(bloco) {
+  const historico = bloco.historico || {};
+  const meses = Object.keys(historico).sort().reverse();
+  if (meses.length === 0) return `<div class="bloco"><p>Nenhuma leitura registrada ainda.</p></div>`;
+  return meses.map(m => `
+    <div class="bloco">
+      <h4>📅 ${formatarMesLabel(m)}</h4>
+      <table>
+        <thead><tr><th>Nº</th><th>Responsável</th><th>Anterior</th><th>Atual</th><th>m³</th><th>R$</th><th>Obs</th></tr></thead>
+        <tbody>${historico[m].map(a => `
+          <tr>
+            <td>${a.numero}</td><td>${a.responsavel}</td><td>${a.leitura_anterior}</td><td>${a.leitura_atual}</td>
+            <td>${a.total_m3}</td><td>R$ ${a.total_rs}</td><td>${a.obs}</td>
+          </tr>`).join("")}
+        </tbody>
+      </table>
+    </div>`).join("");
 }
 
-// ======== Atualização de campo e cálculo automático ========
+// ============== EDIÇÃO / CÁLCULO ==============
 function atualizarCampo(blocoIndex, aptIndex, valor) {
   const blocos = carregarBlocos();
   const bloco = blocos[blocoIndex];
@@ -268,8 +269,86 @@ function atualizarCampo(blocoIndex, aptIndex, valor) {
 
   salvarBlocos(blocos);
 
-  const m3El = document.getElementById(`m3-${blocoIndex}-${aptIndex}`);
-  const rsEl = document.getElementById(`rs-${blocoIndex}-${aptIndex}`);
-  if (m3El) m3El.textContent = apt.total_m3;
-  if (rsEl) rsEl.value = `R$ ${apt.total_rs}`;
+  document.getElementById(`m3-${blocoIndex}-${aptIndex}`).textContent = apt.total_m3;
+  document.getElementById(`rs-${blocoIndex}-${aptIndex}`).value = `R$ ${apt.total_rs}`;
+}
+
+function editarCampo(blocoIndex, aptIndex, campo, valor) {
+  const blocos = carregarBlocos();
+  blocos[blocoIndex].leitura_atual[aptIndex][campo] = valor;
+  salvarBlocos(blocos);
+}
+
+// ============== IMPORTAÇÃO XLSX (CORRIGIDA) ==============
+function importarLeituraAtual(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, { type: "array" });
+    const sheet = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheet];
+    const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+    const blocos = carregarBlocos();
+    const id = Number(new URLSearchParams(location.search).get("id"));
+    const bloco = blocos[id];
+    if (!bloco) return;
+
+    const tarifa = getTarifa(bloco);
+    bloco.leitura_atual = json.map(row => {
+      const ant = Number(row["Leitura Anterior"]) || 0;
+      const atu = Number(row["Leitura Atual"]) || 0;
+      const m3 = Math.max(0, atu - ant);
+      return {
+        numero: row["Hidrômetro Nº"] || "",
+        responsavel: row["Responsável"] || "",
+        leitura_anterior: ant,
+        leitura_atual: atu,
+        total_m3: m3,
+        total_rs: calcularValorEscalonado(m3, tarifa).toFixed(2),
+        obs: row["Observações"] || ""
+      };
+    });
+
+    salvarBlocos(blocos);
+    alert("Leitura importada com sucesso!");
+    renderizarBlocoIndividual();
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ============== EXPORTAÇÃO XLSX ==============
+function exportarLeituraAtual() {
+  if (!window.XLSX) { alert("Biblioteca XLSX não carregada."); return; }
+  const blocos = carregarBlocos();
+  const id = Number(new URLSearchParams(window.location.search).get("id"));
+  const bloco = blocos[id];
+  if (!bloco) { alert("Bloco não encontrado."); return; }
+
+  const dados = bloco.leitura_atual || [];
+  const wsData = [["Hidrômetro Nº","Responsável","Leitura Anterior","Leitura Atual","m³","R$","Observações"]];
+  dados.forEach(apt => {
+    wsData.push([apt.numero, apt.responsavel, apt.leitura_anterior, apt.leitura_atual, apt.total_m3, `R$ ${apt.total_rs}`, apt.obs]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Leitura Atual");
+  XLSX.writeFile(wb, `Leitura_${(bloco.nome||"Bloco")}_${mesAtual()}.xlsx`);
+}
+
+// ============== UTILITÁRIOS DE DATA ==============
+function mesAtual() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,"0")}`;
+}
+function mesAtualLabel() {
+  const d = new Date();
+  return d.toLocaleString("pt-BR", { month: "long", year: "numeric" });
+}
+function formatarMesLabel(mes) {
+  const [ano, m] = mes.split("-");
+  const d = new Date(`${ano}-${m}-01`);
+  return d.toLocaleString("pt-BR", { month: "long", year: "numeric" });
 }
