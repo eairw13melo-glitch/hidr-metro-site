@@ -823,51 +823,7 @@ function calcularValor() {
   const valorMinimo = parseFloat(document.getElementById("valorMinimo").value); // Valor mínimo em R$
   const valorM3 = parseFloat(document.getElementById("valorM3").value); // Valor por m³ excedente
 
-  if (isNaN(consumo) || isNaN(valorMinimo) || isNaN(valorM3)) {
-    document.getElementById("valorTotal").value = "Preencha todos os campos corretamente!";
-    return;
-  }
-
-  let valorTotal = valorMinimo; // Começa com o valor mínimo
-
-  // Se o consumo for maior que 10m³, calcular o excedente
-  if (consumo > 10) {
-    const excedente = consumo - 10; // Subtrai os 10m³ que já estão inclusos no valor mínimo
-    valorTotal += excedente * valorM3; // Soma o valor do excedente
-  }
-
-  // Atualiza o campo de valor total
-  document.getElementById("valorTotal").value = valorTotal.toFixed(2);
-}
-// Função para calcular o valor total a ser pago
-function calcularValor() {
-  const consumo = parseFloat(document.getElementById("consumo").value); // Consumo em m³
-  const valorMinimo = parseFloat(document.getElementById("valorMinimo").value); // Valor mínimo em R$
-  const valorM3 = parseFloat(document.getElementById("valorM3").value); // Valor por m³ excedente
-
-  if (isNaN(consumo) || isNaN(valorMinimo) || isNaN(valorM3)) {
-    document.getElementById("valorTotal").value = "Preencha todos os campos corretamente!";
-    return;
-  }
-
-  let valorTotal = valorMinimo; // Começa com o valor mínimo
-
-  // Se o consumo for maior que 10m³, calcular o excedente
-  if (consumo > 10) {
-    const excedente = consumo - 10; // Subtrai os 10m³ que já estão inclusos no valor mínimo
-    valorTotal += excedente * valorM3; // Soma o valor do excedente
-  }
-
-  // Atualiza o campo de valor total
-  document.getElementById("valorTotal").value = valorTotal.toFixed(2);
-}
-
-// Função para calcular o valor total a ser pago
-function calcularValor() {
-  const consumo = parseFloat(document.getElementById("consumo").value); // Consumo em m³
-  const valorMinimo = parseFloat(document.getElementById("valorMinimo").value); // Valor mínimo em R$
-  const valorM3 = parseFloat(document.getElementById("valorM3").value); // Valor por m³ excedente
-
+  // Validação: Se algum campo estiver vazio ou inválido
   if (isNaN(consumo) || isNaN(valorMinimo) || isNaN(valorM3)) {
     document.getElementById("valorTotal").value = "Preencha todos os campos corretamente!";
     return;
@@ -893,6 +849,7 @@ function atualizarTextoExplicativo() {
 
   let textoExplicativo = "<h3>Como é feito o cálculo:</h3>";
 
+  // Validação: Se algum campo estiver vazio ou inválido
   if (isNaN(consumo) || isNaN(valorMinimo) || isNaN(valorM3)) {
     textoExplicativo += "<p>Por favor, preencha todos os campos corretamente para calcular o valor.</p>";
     document.getElementById("textoExplicativo").innerHTML = textoExplicativo;
@@ -923,4 +880,5 @@ function atualizarTextoExplicativo() {
   const whatsappUrl = `https://wa.me/?text=${textoParaWhatsapp}`;
   document.getElementById("whatsappLink").href = whatsappUrl;
 }
+
 
