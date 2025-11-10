@@ -2,31 +2,49 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
-  <title>Leituras do Bloco</title>
+  <title>Leituras do Bloco | Leitura de Hidrômetro</title>
   <link rel="stylesheet" href="style.css" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
 <body>
-  <script> if (localStorage.getItem("logado") !== "true") location.href = "index.html"; </script>
+  <!-- Proteção de rota -->
+  <script>
+    if (localStorage.getItem("logado") !== "true") location.href = "index.html";
+  </script>
 
+  <!-- Barra superior -->
   <div class="toolbar">
-    <button class="voltar" onclick="window.location.href='dashboard.html'">🔙 Voltar</button>
+    <button class="voltar" aria-label="Voltar para o painel" onclick="window.location.href='dashboard.html'">🔙 Voltar</button>
     <div class="acoes">
       <button type="button" onclick="exportarLeituraAtual()">📤 Exportar Leitura Atual</button>
-      <input type="file" id="importar-leitura-arquivo" accept=".xlsx" style="display:none" onchange="importarLeituraAtual(event)" />
-      <button type="button" onclick="document.getElementById('importar-leitura-arquivo').click()">📥 Importar Leitura Atual (XLSX)</button>
-      <button type="button" class="btn-danger" onclick="resetarBlocoPerguntar()">🗑️ Resetar Bloco</button>
-      <!-- NOVO: botão para boletos -->
-      <button
-  type="button"
-  onclick="(function(){ const id=new URLSearchParams(location.search).get('id'); location.href='boletos.html?id='+encodeURIComponent(id||'0'); })()"
->🧾 Boletos (imprimir)</button>
 
+      <input
+        type="file"
+        id="importar-leitura-arquivo"
+        accept=".xlsx"
+        style="display:none"
+        onchange="importarLeituraAtual(event)"
+      />
+      <button type="button" onclick="document.getElementById('importar-leitura-arquivo').click()">📥 Importar Leitura Atual (XLSX)</button>
+
+      <button type="button" class="btn-danger" onclick="resetarBlocoPerguntar()">🗑️ Resetar Bloco</button>
+
+      <button
+        type="button"
+        onclick="(function(){ 
+          const id=new URLSearchParams(location.search).get('id'); 
+          location.href='boletos.html?id='+encodeURIComponent(id||'0'); 
+        })()"
+      >🧾 Boletos (imprimir)</button>
     </div>
   </div>
 
-  <div id="bloco-detalhes"></div>
+  <!-- Conteúdo principal -->
+  <main id="bloco-detalhes" class="conteudo">
+    <!-- Renderizado via script.js -->
+  </main>
 
+  <!-- Bibliotecas -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="script.js"></script>
 </body>
