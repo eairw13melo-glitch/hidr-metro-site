@@ -1,4 +1,11 @@
-// ============== AUTH BÁSICA ==============
+//
+  Projeto: Leitura de Hidrômetro
+  Versão: v1.0.0
+  Data: 10/11/2025
+  Descrição: Tela de login segura e responsiva.
+
+
+    // ============== AUTH BÁSICA ==============
 const user = { username: "admin", password: "1234" };
 
 function isLogged() {
@@ -751,3 +758,4 @@ function atualizarBoletos(){
   try { renderizarBoletosPage(); } 
   catch(e){ console.error(e); alert("Erro ao gerar boletos. Veja o console para detalhes."); } 
 }
+
