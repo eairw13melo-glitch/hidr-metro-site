@@ -352,3 +352,30 @@ function formatarMesLabel(mes) {
   const d = new Date(`${ano}-${m}-01`);
   return d.toLocaleString("pt-BR", { month: "long", year: "numeric" });
 }
+function gerarExemploXLSX() {
+  if (!window.XLSX) {
+    alert("A biblioteca XLSX não foi carregada. Verifique sua conexão com a internet.");
+    return;
+  }
+
+  const exemplo = [
+    ["Hidrômetro Nº", "Responsável", "Leitura Anterior", "Leitura Atual", "m³", "R$", "Observações"],
+    ["101-A", "João Silva", 0, 12, 12, "R$ 94,68", "Consumo normal"],
+    ["102-A", "Maria Souza", 0, 8, 8, "R$ 64,60", "Dentro da tarifa mínima"],
+    ["103-A", "Carlos Lima", 10, 25, 15, "R$ 111,35", "Excedente leve"],
+    ["104-A", "Ana Paula", 5, 16, 11, "R$ 77,54", "Leitura ajustada"],
+    ["105-A", "José Neto", 0, 10, 10, "R$ 64,60", "Exato no mínimo"]
+  ];
+
+  try {
+    const ws = XLSX.utils.aoa_to_sheet(exemplo);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Leitura Atual");
+    XLSX.writeFile(wb, "leitura_exemplo.xlsx");
+    alert("✅ Arquivo de exemplo gerado com sucesso!");
+  } catch (e) {
+    console.error(e);
+    alert("❌ Ocorreu um erro ao gerar o arquivo de exemplo.");
+  }
+}
+
