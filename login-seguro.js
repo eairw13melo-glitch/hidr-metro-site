@@ -1,16 +1,18 @@
-// ============= LOGIN SEGURO =============
+// =====================================================
+// Projeto: Leitura de Hidrômetro
+// Versão: v1.0.0
+// Data: 10/11/2025
+// Descrição: Lógica de autenticação segura com hash, bloqueio e token.
+// =====================================================
+
 const usuarioSalvo = {
   username: "admin",
-  // hash SHA-256 de "1234"
-  passwordHash: "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4"
+  passwordHash: "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4" // hash de '1234'
 };
 
-// ===== Utilitários =====
 async function hash(str) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf))
-    .map(b => b.toString(16).padStart(2, "0"))
-    .join("");
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
 function gerarToken() {
@@ -19,7 +21,7 @@ function gerarToken() {
 
 function bloquearLoginTemporariamente() {
   const agora = Date.now();
-  localStorage.setItem("bloqueadoAte", agora + 60000); // bloqueia por 1 min
+  localStorage.setItem("bloqueadoAte", agora + 60000);
 }
 
 function estaBloqueado() {
@@ -27,7 +29,6 @@ function estaBloqueado() {
   return Date.now() < expira;
 }
 
-// ===== Controle de tentativas =====
 function registrarTentativaFalha() {
   let tentativas = Number(localStorage.getItem("tentativas") || 0);
   tentativas++;
@@ -43,7 +44,6 @@ function resetarTentativas() {
   localStorage.removeItem("tentativas");
 }
 
-// ===== Mostrar/ocultar senha =====
 const togglePass = document.getElementById("togglePass");
 const passwordInput = document.getElementById("password");
 togglePass.addEventListener("click", () => {
@@ -52,7 +52,6 @@ togglePass.addEventListener("click", () => {
   togglePass.textContent = tipo === "password" ? "👁️" : "🙈";
 });
 
-// ===== Login principal =====
 document.getElementById("login-form").addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -66,8 +65,6 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
 
   const username = document.getElementById("username").value.trim();
   const password = document.getElementById("password").value;
-
-  // Evita login vazio
   if (!username || !password) {
     erroEl.textContent = "Preencha usuário e senha.";
     return;
@@ -75,9 +72,8 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
 
   const senhaHash = await hash(password);
 
-  // Simula verificação lenta (proteção anti força bruta)
   document.getElementById("btn-login").disabled = true;
-  await new Promise(r => setTimeout(r, 500)); // pequena pausa visual
+  await new Promise(r => setTimeout(r, 500));
 
   if (username === usuarioSalvo.username && senhaHash === usuarioSalvo.passwordHash) {
     resetarTentativas();
