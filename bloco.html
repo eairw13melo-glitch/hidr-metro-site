@@ -1,8 +1,8 @@
 <!-- 
   Projeto: Leitura de Hidrômetro
-  Versão: v1.1.0
+  Versão: v1.0.0
   Data: 10/11/2025
-  Descrição: Adiciona simulador de cálculo de consumo (modo modal) na tela do bloco.
+  Descrição: Página de leituras e tarifas do bloco.
 -->
 
 <!DOCTYPE html>
@@ -26,83 +26,12 @@
       <button type="button" onclick="document.getElementById('importar-leitura-arquivo').click()">📥 Importar Leitura Atual (XLSX)</button>
       <button type="button" class="btn-danger" onclick="resetarBlocoPerguntar()">🗑️ Resetar Bloco</button>
       <button type="button" onclick="(function(){ const id=new URLSearchParams(location.search).get('id'); location.href='boletos.html?id='+encodeURIComponent(id||'0'); })()">🧾 Boletos (imprimir)</button>
-      <button type="button" class="btn-simular" onclick="abrirSimulador()">🧮 Simular Conta</button>
-      <button type="button" onclick="gerarExemploXLSX()">📘 Gerar Exemplo XLSX</button>
-
     </div>
   </div>
 
   <main id="bloco-detalhes" class="conteudo"></main>
 
-  <!-- ===== Modal do Simulador ===== -->
-  <div id="modal-simulador" class="modal">
-    <div class="modal-content">
-      <span class="close" onclick="fecharSimulador()">&times;</span>
-      <h2>Calculadora de Conta de Água</h2>
-
-      <div class="input-group">
-        <label for="consumo">Consumo (m³):</label>
-        <input type="number" id="consumo" placeholder="Ex: 16" step="any">
-      </div>
-
-      <div class="input-group">
-        <label for="minimo">Valor Mínimo (R$):</label>
-        <input type="number" id="minimo" placeholder="Ex: 68.40" step="any">
-      </div>
-
-      <div class="input-group">
-        <label for="valorM3">Valor por m³ Excedente (R$):</label>
-        <input type="number" id="valorM3" placeholder="Ex: 8.59" step="any">
-      </div>
-
-      <button onclick="calcularSimulador()">Calcular</button>
-
-      <div id="resultado-simulador" class="resultado-simulador">
-        O valor total aparecerá aqui.
-      </div>
-    </div>
-  </div>
-
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="script.js"></script>
-  <script>
-    // ======== Funções do Simulador ========
-    function abrirSimulador() {
-      document.getElementById("modal-simulador").style.display = "flex";
-    }
-
-    function fecharSimulador() {
-      document.getElementById("modal-simulador").style.display = "none";
-    }
-
-    function calcularSimulador() {
-      const consumo = parseFloat(document.getElementById("consumo").value);
-      const minimo = parseFloat(document.getElementById("minimo").value);
-      const valorM3 = parseFloat(document.getElementById("valorM3").value);
-      const elementoResultado = document.getElementById("resultado-simulador");
-
-      if (isNaN(consumo) || isNaN(minimo) || isNaN(valorM3)) {
-        elementoResultado.textContent = "Por favor, preencha todos os campos corretamente.";
-        elementoResultado.style.color = "red";
-        return;
-      }
-
-      let valorTotal;
-      if (consumo <= 10) {
-        valorTotal = minimo;
-      } else {
-        valorTotal = (consumo - 10) * valorM3 + minimo;
-      }
-
-      elementoResultado.textContent = "Valor Total: " + valorTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-      elementoResultado.style.color = "#333";
-    }
-
-    // Fecha modal clicando fora
-    window.onclick = function(e) {
-      const modal = document.getElementById("modal-simulador");
-      if (e.target === modal) fecharSimulador();
-    }
-  </script>
 </body>
 </html>
