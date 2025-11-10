@@ -1,273 +1,242 @@
+/* =========================================================
+   LEITURA DE HIDRÔMETRO - Layout Moderno e Responsivo
+   ========================================================= */
 :root {
-  --primary: #007bff;
-  --primary-hover: #0056b3;
-  --danger: #c0392b;
-  --danger-hover: #922b21;
-  --bg: #f7f7f7;
-  --card: #fff;
-  --text: #222;
-  --muted: #666;
-  --border: #ddd;
+  --azul: #2563eb;
+  --azul-escuro: #1e3a8a;
+  --vermelho: #dc2626;
+  --cinza-claro: #f9fafb;
+  --cinza-medio: #e5e7eb;
+  --texto: #111827;
+  --radius: 8px;
+  --shadow: 0 2px 5px rgba(0,0,0,0.1);
+  --transicao: all 0.2s ease;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
+
 body {
-  font-family: Arial, Helvetica, sans-serif;
-  color: var(--text);
-  background: var(--bg);
+  font-family: "Inter", system-ui, sans-serif;
+  background: var(--cinza-claro);
+  color: var(--texto);
   margin: 0;
-  padding: 20px;
+  padding: 0;
 }
 
-h1, h2, h3, h4 { margin: 0 0 10px; }
-
-button {
-  background: var(--primary);
-  color: #fff;
-  border: none;
-  padding: 8px 12px;
-  margin: 4px 6px 4px 0;
-  cursor: pointer;
-  border-radius: 4px;
-  font-size: 14px;
-}
-button:hover { background: var(--primary-hover); }
-.btn-danger { background: var(--danger); }
-.btn-danger:hover { background: var(--danger-hover); }
-
-.btn-danger-outline {
-  background: transparent;
-  color: var(--danger);
-  border: 1px solid var(--danger);
-}
-.btn-danger-outline:hover {
-  background: #fdecea;
-}
-
-.topbar {
+/* ======== Cabeçalhos / Toolbars ======== */
+.topbar,
+.toolbar,
+header.boletos-controls {
+  background: var(--azul-escuro);
+  color: white;
+  padding: 10px 16px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  gap: .5rem;
+  box-shadow: var(--shadow);
 }
-.topbar-actions { display: flex; flex-wrap: wrap; align-items: center; }
 
-.login-container {
-  max-width: 320px;
-  margin: 12vh auto;
-  background: var(--card);
-  padding: 22px;
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+.topbar h1 {
+  margin: 0;
+  font-size: 1.25rem;
 }
-.login-container input {
-  width: 100%;
-  padding: 10px;
-  margin: 6px 0;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-}
-.error { color: var(--danger); min-height: 20px; }
 
-#blocos-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 14px;
+.topbar button,
+.toolbar button,
+header.boletos-controls button {
+  background: var(--azul);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: var(--transicao);
+  font-weight: 500;
+}
+.topbar button:hover,
+.toolbar button:hover,
+header.boletos-controls button:hover {
+  background: #1d4ed8;
+}
+
+.btn-danger {
+  background: var(--vermelho);
+}
+.btn-danger:hover {
+  background: #b91c1c;
+}
+.btn-danger-outline {
+  background: transparent;
+  color: var(--vermelho);
+  border: 1px solid var(--vermelho);
+}
+
+/* ======== Layout de blocos ======== */
+#blocos-container,
+#bloco-detalhes,
+#boletos-root {
+  padding: 16px;
 }
 
 .bloco {
-  background: var(--card);
-  padding: 14px;
-  border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.06);
+  background: white;
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
 }
-.bloco h2 { margin: 0 0 6px; font-size: 18px; }
-.bloco p { margin: 2px 0; color: var(--muted); }
 
-.toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-.voltar {
-  background: #6c757d;
-  color: white;
-  padding: 6px 12px;
-  border: none; border-radius: 4px;
-  cursor: pointer;
+.bloco h2 {
+  margin-top: 0;
+  color: var(--azul-escuro);
 }
-.voltar:hover { background: #5a6268; }
-.acoes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-top: 10px;
+}
+
+/* ======== Tabelas ======== */
 table {
   width: 100%;
   border-collapse: collapse;
+  overflow-x: auto;
+  display: block;
   margin-top: 10px;
-  background: var(--card);
-  border-radius: 8px;
-  overflow: hidden;
 }
+
 th, td {
+  border-bottom: 1px solid var(--cinza-medio);
+  padding: 6px 8px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+th {
+  background: var(--cinza-medio);
+  font-weight: 600;
+}
+
+/* ======== Inputs ======== */
+input, select, button {
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="date"],
+select {
   border: 1px solid #ccc;
-  padding: 6px;
-  text-align: center;
-  font-size: 14px;
-}
-thead th {
-  position: sticky;
-  top: 0;
-  background: #fff;
-  z-index: 1;
-}
-
-input[type="text"], input[type="number"] {
-  padding: 5px;
+  border-radius: var(--radius);
+  padding: 6px 8px;
   width: 100%;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 14px;
-}
-input.menor { max-width: 70px; }
-input.pequeno { max-width: 100px; }
-input.media { max-width: 120px; }
-.input-curto { width: 140px; margin: 0 10px 10px 10px; }
-
-.tarifa-form {
-  display: grid;
-  grid-template-columns: 1fr 160px;
-  gap: 8px 12px;
-  align-items: center;
-  max-width: 560px;
-  margin: 6px 0 16px;
-}
-.tarifa-form label { color: var(--muted); }
-.tarifa-form button {
-  grid-column: 1 / -1;
-  justify-self: start;
+  max-width: 200px;
 }
 
-.sr-only {
-  position: absolute;
-  width: 1px; height: 1px;
-  padding: 0; margin: -1px;
-  overflow: hidden; clip: rect(0,0,0,0);
-  white-space: nowrap; border: 0;
+input:focus, select:focus {
+  outline: 2px solid var(--azul);
 }
-/* ========== BOLETOS ========== */
-.boletos-body { padding: 0; background: #fff; }
-.boletos-controls {
-  display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
-  padding: 12px 16px; border-bottom: 1px solid #eee; background: #fafafa;
-}
-.boletos-controls .ctrl-group { display: flex; gap: 6px; align-items: center; }
 
+/* ======== Login ======== */
+.login-container {
+  background: white;
+  max-width: 320px;
+  margin: 60px auto;
+  padding: 24px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.login-container h2 {
+  margin-top: 0;
+  color: var(--azul-escuro);
+}
+
+.login-container input {
+  width: 100%;
+  margin: 6px 0;
+}
+
+.error {
+  color: var(--vermelho);
+  font-size: .9rem;
+}
+
+/* ======== Boletos ======== */
 .boleto-sheet {
-  width: 210mm;   /* A4 */
-  min-height: 297mm;
-  margin: 0 auto;
-  padding: 8mm 10mm;
-  box-sizing: border-box;
-  position: relative;
-  page-break-after: always;
-  background: #fff;
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+  padding: 12px;
 }
 
 .boleto-half {
-  height: calc(50% - 7mm);  /* duas metades por folha */
-  border: 1px solid #000;
-  padding: 6mm 6mm 4mm 6mm;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  padding: 12px;
+  border: 1px dashed var(--cinza-medio);
+  margin-bottom: 8px;
 }
 
-/* linha de corte horizontal entre as metades */
-.cut-line {
-  position: relative;
-  height: 14mm;
-  display: flex; align-items: center; justify-content: center;
-}
-.cut-line:before {
-  content: "";
-  position: absolute;
-  left: 0; right: 0; top: 50%;
-  border-top: 1px dashed #000;
-}
-.cut-line span {
-  background: #fff; padding: 0 6px; font-size: 12px; color: #333;
-}
-
-/* cabeçalho do boleto */
 .boleto-head {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 6mm;
-  align-items: center;
-  margin-bottom: 4mm;
-}
-.boleto-head .apt {
-  background: #e6e6e6;
-  padding: 4mm; font-weight: 700; border: 1px solid #000;
-}
-.boleto-head .vcto {
-  background: #e6e6e6;
-  padding: 4mm; font-weight: 700; border: 1px solid #000; white-space: nowrap;
+  display: flex;
+  justify-content: space-between;
+  font-weight: bold;
+  color: var(--azul-escuro);
+  border-bottom: 1px solid var(--cinza-medio);
+  padding-bottom: 4px;
 }
 
-/* “linhas” internas (simulação de form) */
-.boleto-lines {
-  flex: 1 1 auto;
-  border: 1px solid #000;
-  margin-bottom: 4mm;
-  position: relative;
-  background:
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0, transparent 12px,
-      rgba(0,0,0,.15) 12px, rgba(0,0,0,.15) 13px
-    );
-}
-
-/* total / valor */
 .boleto-total {
-  display: grid;
-  grid-template-columns: 80px 1fr auto auto;
-  border: 1px solid #000;
-  margin-bottom: 4mm;
-}
-.boleto-total .cell {
-  padding: 6px 8px;
-  border-right: 1px solid #000;
-  font-weight: 700;
-}
-.boleto-total .cell:last-child { border-right: 0; }
-
-/* OBS */
-.boleto-obs {
-  display: grid;
-  grid-template-columns: 60px 1fr;
-  border: 1px solid #000;
-}
-.boleto-obs .label {
-  border-right: 1px solid #000;
-  padding: 6px 8px; font-weight: 700;
-}
-.boleto-obs .area {
-  min-height: 22mm;
-  background:
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0, transparent 12px,
-      rgba(0,0,0,.15) 12px, rgba(0,0,0,.15) 13px
-    );
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-weight: bold;
 }
 
-/* print */
+.cut-line {
+  text-align: center;
+  color: #999;
+  margin: 8px 0;
+  font-family: monospace;
+}
+
+/* ======== Responsividade ======== */
+@media (max-width: 768px) {
+  .topbar,
+  .toolbar,
+  header.boletos-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .acoes button,
+  .topbar button,
+  header.boletos-controls button {
+    width: 100%;
+  }
+
+  table {
+    font-size: .9rem;
+  }
+
+  th, td {
+    white-space: normal;
+  }
+}
+
 @media print {
-  .no-print { display: none !important; }
-  body { background: #fff; padding: 0; margin: 0; }
-  .boleto-sheet { page-break-after: always; margin: 0; }
+  .no-print, .toolbar, .topbar {
+    display: none !important;
+  }
+  body {
+    background: white;
+  }
 }
-/* ajuste responsivo (visualização em tela fora do A4) */
-@media screen and (max-width: 1000px) {
-  .boleto-sheet { width: 100%; padding: 8mm 5mm; }
-}
-
