@@ -1,9 +1,9 @@
 // =====================================================
 // Projeto: Leitura de Hidrômetro
-// Versão: v1.1.0
-// Data: 10/11/2025
-// Descrição: Código principal — cálculo simplificado (mínimo + excedente),
-// correções de renderização e importação de planilhas.
+// Versão: v1.1.4
+// Data: 11/11/2025
+// Descrição: Código principal — revisão total de botões,
+// cálculo simplificado (mínimo + excedente) e importação XLSX funcional.
 // =====================================================
 
 // ============== AUTH BÁSICA ==============
@@ -18,11 +18,11 @@ function logout() {
 }
 
 // ============== TARIFAS POR BLOCO ==============
-const DEFAULT_TARIFA = { minimo: 64.6, faixa_11_20: 8.94, faixa_21_50: 13.82 };
+const DEFAULT_TARIFA = { minimo: 64.6, faixa_11_20: 8.94, faixa_21_50: 0 };
 
-// NOVO CÁLCULO SIMPLIFICADO (mínimo + excedente)
+// Cálculo: mínimo + excedente
 function calcularValorEscalonado(m3, tarifa) {
-  const { minimo, faixa_11_20 } = tarifa; // faixa_11_20 = valor excedente
+  const { minimo, faixa_11_20 } = tarifa;
   if (m3 <= 10) return minimo;
   return minimo + (m3 - 10) * faixa_11_20;
 }
@@ -53,9 +53,8 @@ function salvarBlocos(blocos) {
 // ============== BOOT / ROTAS ==============
 document.addEventListener("DOMContentLoaded", () => {
   const path = location.pathname;
-
-  // Página de login
   const loginForm = document.getElementById("login-form");
+
   if (loginForm) {
     if (isLogged()) location.href = "dashboard.html";
     loginForm.addEventListener("submit", (e) => {
@@ -72,9 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  // Páginas internas exigem login
   if (!isLogged()) return;
-
   if (path.endsWith("dashboard.html")) renderizarListaDeBlocos();
   if (path.endsWith("bloco.html")) renderizarBlocoIndividual();
   if (path.endsWith("boletos.html")) renderizarBoletosPage();
@@ -118,6 +115,7 @@ function criarBloco() {
   alert("Bloco criado com sucesso!");
 }
 
+// ============== DASHBOARD ==============
 function renderizarListaDeBlocos() {
   const blocos = carregarBlocos();
   const container = document.getElementById("blocos-container");
@@ -145,15 +143,6 @@ function renderizarListaDeBlocos() {
   });
 }
 
-function excluirBloco(index) {
-  const blocos = carregarBlocos();
-  if (!blocos[index]) return;
-  if (!confirm("Excluir este bloco?")) return;
-  blocos.splice(index, 1);
-  salvarBlocos(blocos);
-  renderizarListaDeBlocos();
-}
-
 // ============== PÁGINA DO BLOCO ==============
 function renderizarBlocoIndividual() {
   const blocos = carregarBlocos();
@@ -167,7 +156,6 @@ function renderizarBlocoIndividual() {
     return;
   }
 
-  // Garantir integridade de dados
   bloco.leitura_atual ||= [];
   bloco.historico ||= {};
   bloco.tarifaConfig ||= { ...DEFAULT_TARIFA };
@@ -205,56 +193,29 @@ function renderizarBlocoIndividual() {
   `;
 }
 
-// ============== TABELAS E HISTÓRICO ==============
-function gerarTabelaLeituraAtual(bloco, blocoIndex) {
-  return `
-    <table>
-      <thead>
-        <tr>
-          <th>Hidrômetro Nº</th>
-          <th>Responsável</th>
-          <th>Anterior</th>
-          <th>Atual</th>
-          <th>m³</th>
-          <th>R$</th>
-          <th>Obs</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${bloco.leitura_atual.map((apt, i) => `
-          <tr>
-            <td><input type="text" value="${apt.numero}" onchange="editarCampo(${blocoIndex},${i},'numero',this.value)"></td>
-            <td><input type="text" value="${apt.responsavel}" onchange="editarCampo(${blocoIndex},${i},'responsavel',this.value)"></td>
-            <td><input type="number" value="${apt.leitura_anterior}" onchange="editarCampo(${blocoIndex},${i},'leitura_anterior',Number(this.value))"></td>
-            <td><input type="number" value="${apt.leitura_atual}" oninput="atualizarCampo(${blocoIndex},${i},this.value)"></td>
-            <td id="m3-${blocoIndex}-${i}">${apt.total_m3}</td>
-            <td><input type="text" id="rs-${blocoIndex}-${i}" value="R$ ${apt.total_rs}" readonly></td>
-            <td><input type="text" value="${apt.obs}" onchange="editarCampo(${blocoIndex},${i},'obs',this.value)"></td>
-          </tr>`).join("")}
-      </tbody>
-    </table>`;
+// ======== Salvar Tarifas (corrigido) ========
+function salvarTarifaDoBloco(blocoIndex) {
+  const blocos = carregarBlocos();
+  const bloco = blocos[blocoIndex];
+  if (!bloco) return;
+
+  setTarifa(bloco, {
+    minimo: document.getElementById("tarifa-minimo-bloco").value,
+    faixa_11_20: document.getElementById("tarifa-11-20-bloco").value
+  });
+
+  const tarifa = getTarifa(bloco);
+  bloco.leitura_atual = bloco.leitura_atual.map(apt => {
+    apt.total_rs = calcularValorEscalonado(apt.total_m3, tarifa).toFixed(2);
+    return apt;
+  });
+
+  salvarBlocos(blocos);
+  alert("✅ Tarifas salvas e valores recalculados!");
+  renderizarBlocoIndividual();
 }
 
-function gerarHistorico(bloco) {
-  const historico = bloco.historico || {};
-  const meses = Object.keys(historico).sort().reverse();
-  if (meses.length === 0) return `<div class="bloco"><p>Nenhuma leitura registrada ainda.</p></div>`;
-  return meses.map(m => `
-    <div class="bloco">
-      <h4>📅 ${formatarMesLabel(m)}</h4>
-      <table>
-        <thead><tr><th>Nº</th><th>Responsável</th><th>Anterior</th><th>Atual</th><th>m³</th><th>R$</th><th>Obs</th></tr></thead>
-        <tbody>${historico[m].map(a => `
-          <tr>
-            <td>${a.numero}</td><td>${a.responsavel}</td><td>${a.leitura_anterior}</td><td>${a.leitura_atual}</td>
-            <td>${a.total_m3}</td><td>R$ ${a.total_rs}</td><td>${a.obs}</td>
-          </tr>`).join("")}
-        </tbody>
-      </table>
-    </div>`).join("");
-}
-
-// ============== EDIÇÃO / CÁLCULO ==============
+// ============== EDIÇÃO E CÁLCULOS ==============
 function atualizarCampo(blocoIndex, aptIndex, valor) {
   const blocos = carregarBlocos();
   const bloco = blocos[blocoIndex];
@@ -279,66 +240,85 @@ function editarCampo(blocoIndex, aptIndex, campo, valor) {
   salvarBlocos(blocos);
 }
 
-// ============== IMPORTAÇÃO XLSX (CORRIGIDA) ==============
+// ============== IMPORTAÇÃO E EXPORTAÇÃO XLSX ==============
 function importarLeituraAtual(event) {
   const file = event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = function (e) {
-    const data = new Uint8Array(e.target.result);
-    const workbook = XLSX.read(data, { type: "array" });
-    const sheet = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheet];
-    const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: "array" });
+      const sheet = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheet];
+      const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
 
-    const blocos = carregarBlocos();
-    const id = Number(new URLSearchParams(location.search).get("id"));
-    const bloco = blocos[id];
-    if (!bloco) return;
+      const blocos = carregarBlocos();
+      const id = Number(new URLSearchParams(location.search).get("id"));
+      const bloco = blocos[id];
+      if (!bloco) return;
 
-    const tarifa = getTarifa(bloco);
-    bloco.leitura_atual = json.map(row => {
-      const ant = Number(row["Leitura Anterior"]) || 0;
-      const atu = Number(row["Leitura Atual"]) || 0;
-      const m3 = Math.max(0, atu - ant);
-      return {
-        numero: row["Hidrômetro Nº"] || "",
-        responsavel: row["Responsável"] || "",
-        leitura_anterior: ant,
-        leitura_atual: atu,
-        total_m3: m3,
-        total_rs: calcularValorEscalonado(m3, tarifa).toFixed(2),
-        obs: row["Observações"] || ""
-      };
-    });
+      const tarifa = getTarifa(bloco);
+      bloco.leitura_atual = json.map(row => {
+        const ant = Number(row["Leitura Anterior"]) || 0;
+        const atu = Number(row["Leitura Atual"]) || 0;
+        const m3 = Math.max(0, atu - ant);
+        return {
+          numero: row["Hidrômetro Nº"] || "",
+          responsavel: row["Responsável"] || "",
+          leitura_anterior: ant,
+          leitura_atual: atu,
+          total_m3: m3,
+          total_rs: calcularValorEscalonado(m3, tarifa).toFixed(2),
+          obs: row["Observações"] || ""
+        };
+      });
 
-    salvarBlocos(blocos);
-    alert("Leitura importada com sucesso!");
-    renderizarBlocoIndividual();
+      salvarBlocos(blocos);
+      alert("✅ Leitura importada com sucesso!");
+      renderizarBlocoIndividual();
+    } catch (err) {
+      alert("❌ Erro ao importar planilha: " + err.message);
+    }
   };
   reader.readAsArrayBuffer(file);
 }
 
-// ============== EXPORTAÇÃO XLSX ==============
 function exportarLeituraAtual() {
   if (!window.XLSX) { alert("Biblioteca XLSX não carregada."); return; }
   const blocos = carregarBlocos();
   const id = Number(new URLSearchParams(window.location.search).get("id"));
   const bloco = blocos[id];
-  if (!bloco) { alert("Bloco não encontrado."); return; }
+  if (!bloco) return alert("Bloco não encontrado.");
 
   const dados = bloco.leitura_atual || [];
   const wsData = [["Hidrômetro Nº","Responsável","Leitura Anterior","Leitura Atual","m³","R$","Observações"]];
-  dados.forEach(apt => {
-    wsData.push([apt.numero, apt.responsavel, apt.leitura_anterior, apt.leitura_atual, apt.total_m3, `R$ ${apt.total_rs}`, apt.obs]);
-  });
+  dados.forEach(a => wsData.push([a.numero,a.responsavel,a.leitura_anterior,a.leitura_atual,a.total_m3,`R$ ${a.total_rs}`,a.obs]));
   const ws = XLSX.utils.aoa_to_sheet(wsData);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Leitura Atual");
   XLSX.writeFile(wb, `Leitura_${(bloco.nome||"Bloco")}_${mesAtual()}.xlsx`);
 }
 
-// ============== UTILITÁRIOS DE DATA ==============
+// ======== Gerar exemplo XLSX ========
+function gerarExemploXLSX() {
+  if (!window.XLSX) { alert("Biblioteca XLSX não carregada."); return; }
+
+  const exemplo = [
+    ["Hidrômetro Nº","Responsável","Leitura Anterior","Leitura Atual","m³","R$","Observações"],
+    ["101-A","João Silva",0,12,12,"R$ 94,68","Consumo normal"],
+    ["102-A","Maria Souza",0,8,8,"R$ 64,60","Dentro da tarifa mínima"],
+    ["103-A","Carlos Lima",10,25,15,"R$ 111,35","Excedente leve"],
+    ["104-A","Ana Paula",5,16,11,"R$ 77,54","Leitura ajustada"]
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(exemplo);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Leitura Atual");
+  XLSX.writeFile(wb, "leitura_exemplo.xlsx");
+  alert("📘 Arquivo de exemplo gerado com sucesso!");
+}
+
+// ============== UTILITÁRIOS ==============
 function mesAtual() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,"0")}`;
@@ -352,30 +332,3 @@ function formatarMesLabel(mes) {
   const d = new Date(`${ano}-${m}-01`);
   return d.toLocaleString("pt-BR", { month: "long", year: "numeric" });
 }
-function gerarExemploXLSX() {
-  if (!window.XLSX) {
-    alert("A biblioteca XLSX não foi carregada. Verifique sua conexão com a internet.");
-    return;
-  }
-
-  const exemplo = [
-    ["Hidrômetro Nº", "Responsável", "Leitura Anterior", "Leitura Atual", "m³", "R$", "Observações"],
-    ["101-A", "João Silva", 0, 12, 12, "R$ 94,68", "Consumo normal"],
-    ["102-A", "Maria Souza", 0, 8, 8, "R$ 64,60", "Dentro da tarifa mínima"],
-    ["103-A", "Carlos Lima", 10, 25, 15, "R$ 111,35", "Excedente leve"],
-    ["104-A", "Ana Paula", 5, 16, 11, "R$ 77,54", "Leitura ajustada"],
-    ["105-A", "José Neto", 0, 10, 10, "R$ 64,60", "Exato no mínimo"]
-  ];
-
-  try {
-    const ws = XLSX.utils.aoa_to_sheet(exemplo);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Leitura Atual");
-    XLSX.writeFile(wb, "leitura_exemplo.xlsx");
-    alert("✅ Arquivo de exemplo gerado com sucesso!");
-  } catch (e) {
-    console.error(e);
-    alert("❌ Ocorreu um erro ao gerar o arquivo de exemplo.");
-  }
-}
-
