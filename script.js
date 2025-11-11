@@ -348,6 +348,8 @@ function renderizarBlocoIndividual() {
 	  preencherTarifaForm(bloco);
 	  // Preencher form de boleto
 	  preencherBoletoConfigForm(bloco);
+	  // Atualizar totais da tabela
+	  atualizarTotais(id);
 	}
 
 function preencherBoletoConfigForm(bloco) {
@@ -465,6 +467,12 @@ function gerarTabelaLeituraAtual(bloco, blocoIndex) {
             </td>
           </tr>
         `).join("")}
+        <tr style="background-color: var(--cinza-medio); font-weight: bold;">
+          <td colspan="4" style="text-align: right; padding-right: 10px;">TOTAL:</td>
+          <td id="total-m3-${blocoIndex}">0</td>
+          <td id="total-rs-${blocoIndex}">R$ 0.00</td>
+          <td colspan="3"></td>
+        </tr>
       </tbody>
     </table>
   `;
@@ -507,6 +515,12 @@ function gerarHistorico(bloco) {
               <td>${apt.obs}</td>
             </tr>
           `).join("")}
+          <tr style="background-color: var(--cinza-medio); font-weight: bold;">
+            <td colspan="4" style="text-align: right; padding-right: 10px;">TOTAL:</td>
+            <td>${historico[mes].reduce((acc, apt) => acc + (Number(apt.total_m3) || 0), 0).toFixed(2)}</td>
+            <td>R$ ${historico[mes].reduce((acc, apt) => acc + (parseFloat(apt.total_rs) || 0), 0).toFixed(2)}</td>
+            <td></td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -535,6 +549,9 @@ function atualizarCampo(blocoIndex, aptIndex, valor) {
   const rsEl = document.getElementById(`rs-${blocoIndex}-${aptIndex}`);
   if (m3El) m3El.textContent = apt.total_m3;
   if (rsEl) rsEl.value = `R$ ${apt.total_rs}`;
+  
+  // Atualiza totais
+  atualizarTotais(blocoIndex);
 }
 
 function editarCampo(blocoIndex, aptIndex, campo, valor) {
@@ -617,6 +634,9 @@ function editarCampo(blocoIndex, aptIndex, campo, valor) {
 	    const rsEl = document.getElementById(`rs-${blocoIndex}-${aptIndex}`);
 	    if (rsEl) rsEl.value = `R$ ${apt.total_rs}`;
 	  });
+	  
+	  // Atualiza totais
+	  atualizarTotais(blocoIndex);
 	}
 	
 	function salvarApartamentoDireto(blocoIndex, aptIndex) {
@@ -1226,3 +1246,26 @@ function atualizarTextoExplicativo() {
 }
 
 
+
+
+// ============== FUNÇÃO PARA ATUALIZAR TOTAIS ==============
+function atualizarTotais(blocoIndex) {
+  const blocos = carregarBlocos();
+  const bloco = blocos[blocoIndex];
+  if (!bloco) return;
+  
+  let totalM3 = 0;
+  let totalRs = 0;
+  
+  bloco.leitura_atual.forEach(apt => {
+    totalM3 += Number(apt.total_m3) || 0;
+    totalRs += parseFloat(apt.total_rs) || 0;
+  });
+  
+  // Atualiza os elementos na UI
+  const totalM3El = document.getElementById(`total-m3-${blocoIndex}`);
+  const totalRsEl = document.getElementById(`total-rs-${blocoIndex}`);
+  
+  if (totalM3El) totalM3El.textContent = totalM3.toFixed(2);
+  if (totalRsEl) totalRsEl.textContent = `R$ ${totalRs.toFixed(2)}`;
+}

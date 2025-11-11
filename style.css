@@ -148,6 +148,70 @@ input:focus, select:focus {
   outline: 2px solid var(--azul);
 }
 
+/* Classes de tamanho para inputs */
+input.pequeno {
+  max-width: 100px;
+}
+
+input.menor {
+  max-width: 80px;
+}
+
+input.media {
+  max-width: 120px;
+}
+
+input.input-curto {
+  max-width: 150px;
+}
+
+/* Estilo para formulários */
+.tarifa-form,
+.boleto-form {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.tarifa-form label,
+.boleto-form label {
+  font-weight: 500;
+}
+
+.tarifa-form button,
+.boleto-form button {
+  grid-column: 1 / 3;
+  justify-self: start;
+  margin-top: 5px;
+}
+
+.tarifa-form textarea,
+.boleto-form textarea {
+  grid-column: 2;
+  width: 100%;
+  max-width: 400px;
+  border: 1px solid #ccc;
+  border-radius: var(--radius);
+  padding: 6px 8px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+/* Classe para leitura de tela */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
 /* ======== Login ======== */
 .login-container {
   background: white;
@@ -172,6 +236,46 @@ input:focus, select:focus {
 .error {
   color: var(--vermelho);
   font-size: .9rem;
+}
+
+/* ======== Calculadora ======== */
+.calculator-container {
+  background: var(--cinza-claro);
+  border: 2px solid var(--azul);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.calculator-container h2 {
+  color: var(--azul-escuro);
+  margin-top: 0;
+  font-size: 1.2rem;
+}
+
+.input-group {
+  margin-bottom: 12px;
+}
+
+.input-group label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: var(--texto);
+}
+
+.input-group input {
+  width: 100%;
+  max-width: 300px;
+}
+
+.result-box {
+  background: white;
+  border: 1px solid var(--cinza-medio);
+  border-radius: var(--radius);
+  padding: 12px;
+  margin-top: 12px;
+  line-height: 1.6;
 }
 
 /* ======== Boletos ======== */
