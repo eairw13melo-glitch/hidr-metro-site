@@ -250,14 +250,18 @@ function renderizarBlocoIndividual() {
 
   // Aplica o rateio no carregamento da página
   bloco.leitura_atual = calcularRateioSabesp(bloco);
+  // Saneamento de novos campos para blocos antigos
   if (!bloco.boletoConfig) {
     bloco.boletoConfig = {
-      conta_sabesp_rs: 0.00, // Novo campo
+      conta_sabesp_rs: 0.00,
       servico_leitura_rs: 6.25,
       condominio_rs: 50.00,
       multas_outros_rs: 0.00,
       obs_geral: "MULTA ATRASO BOLETO R$5,00\nTX RELIGAÇÃO DE AGUA R$20,00\nMULTA INFRAÇÃO DE NORMAS R$20,00\nDOIS BOLETOS DE ÁGUA ATRASADOS RESULTARÁ NO CORTE DÁ ÁGUA"
     };
+  } else {
+    // Garante que o novo campo exista em blocos já existentes
+    if (bloco.boletoConfig.conta_sabesp_rs === undefined) bloco.boletoConfig.conta_sabesp_rs = 0.00;
   }
   // Garante que todos os apartamentos tenham o campo obs_boleto
   bloco.leitura_atual = bloco.leitura_atual.map(apt => {
@@ -792,8 +796,26 @@ function importarDados(event) {
   const reader = new FileReader();
   reader.onload = function (e) {
     try {
-      const dados = JSON.parse(e.target.result);
-      localStorage.setItem("blocos", JSON.stringify(dados));
+	      const dados = JSON.parse(e.target.result);
+	      
+	      // Saneamento de blocos importados para garantir a nova estrutura
+	      const blocosSaneados = dados.map(bloco => {
+	        if (!bloco.tarifaConfig) bloco.tarifaConfig = { ...DEFAULT_TARIFA };
+	        if (!bloco.boletoConfig) {
+	          bloco.boletoConfig = {
+	            conta_sabesp_rs: 0.00,
+	            servico_leitura_rs: 6.25,
+	            condominio_rs: 50.00,
+	            multas_outros_rs: 0.00,
+	            obs_geral: "MULTA ATRASO BOLETO R$5,00\nTX RELIGAÇÃO DE AGUA R$20,00\nMULTA INFRAÇÃO DE NORMAS R$20,00\nDOIS BOLETOS DE ÁGUA ATRASADOS RESULTARÁ NO CORTE DÁ ÁGUA"
+	          };
+	        } else {
+	          if (bloco.boletoConfig.conta_sabesp_rs === undefined) bloco.boletoConfig.conta_sabesp_rs = 0.00;
+	        }
+	        return bloco;
+	      });
+
+	      localStorage.setItem("blocos", JSON.stringify(blocosSaneados));
       alert("Dados importados com sucesso!");
       location.reload();
     } catch (error) {
