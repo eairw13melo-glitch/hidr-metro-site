@@ -89,13 +89,29 @@ function setTarifa(bloco, valores) {
   };
 }
 function calcularValorEscalonado(m3, tarifa) {
-  const { minimo, faixa_11_20, faixa_21_50 } = tarifa;
-  if (m3 <= 10) return minimo;
-  if (m3 <= 20) return minimo + (m3 - 10) * faixa_11_20;
-  const faixa2 = 10 * faixa_11_20;
-  const faixa3 = (m3 - 20) * faixa_21_50;
-  return minimo + faixa2 + faixa3;
-}
+	  const { minimo, faixa_11_20, faixa_21_50 } = tarifa;
+	  if (m3 <= 10) return minimo;
+	  if (m3 <= 20) return minimo + (m3 - 10) * faixa_11_20;
+	  const faixa2 = 10 * faixa_11_20;
+	  const faixa3 = (m3 - 20) * faixa_21_50;
+	  return minimo + faixa2 + faixa3;
+	}
+	
+	// Função para recalcular o valor de todos os apartamentos no bloco
+	function recalcularValoresDoBloco(blocoIndex) {
+	  const blocos = carregarBlocos();
+	  const bloco = blocos[blocoIndex];
+	  if (!bloco) return;
+	
+	  const tarifa = getTarifa(bloco);
+	  bloco.leitura_atual.forEach(apt => {
+	    const valorBase = calcularValorEscalonado(apt.total_m3, tarifa);
+	    apt.total_rs = valorBase.toFixed(2);
+	  });
+	
+	  salvarBlocos(blocos);
+	  calcularRateioSabesp(blocoIndex); // Chama o rateio da Sabesp após o recalculo base
+	}
 
 // ============== STORAGE HELPERS ==============
 function carregarBlocos() {
@@ -160,8 +176,9 @@ function criarBloco() {
     leitura_atual,
     historico: {},
     tarifaConfig: { ...DEFAULT_TARIFA }, // 👈 tarifas independentes por bloco
-    // Novos campos para boletos (padrão do bloco)
-    boletoConfig: {
+// Novos campos para boletos (padrão do bloco)
+	    contaSabesp: 0.00, // Novo campo para o valor da conta Sabesp
+	    boletoConfig: {
       servico_leitura_rs: 6.25, // Valor padrão do modelo
       condominio_rs: 50.00, // Valor padrão do modelo
       multas_outros_rs: 0.00,
@@ -242,10 +259,11 @@ function renderizarBlocoIndividual() {
     container.innerHTML = `<div class="bloco"><h2>Bloco não encontrado.</h2></div>`;
     return;
   }
-  // saneamento
-  if (!bloco.leitura_atual) bloco.leitura_atual = [];
-  if (!bloco.historico) bloco.historico = {};
-  if (!bloco.tarifaConfig) bloco.tarifaConfig = { ...DEFAULT_TARIFA };
+// saneamento
+	  if (!bloco.leitura_atual) bloco.leitura_atual = [];
+	  if (!bloco.historico) bloco.historico = {};
+	  if (!bloco.tarifaConfig) bloco.tarifaConfig = { ...DEFAULT_TARIFA };
+	  if (!bloco.contaSabesp) bloco.contaSabesp = 0.00; // Garante o campo da conta Sabesp
   if (!bloco.boletoConfig) {
     bloco.boletoConfig = {
       servico_leitura_rs: 6.25,
@@ -254,12 +272,21 @@ function renderizarBlocoIndividual() {
       obs_geral: "MULTA ATRASO BOLETO R$5,00\nTX RELIGAÇÃO DE AGUA R$20,00\nMULTA INFRAÇÃO DE NORMAS R$20,00\nDOIS BOLETOS DE ÁGUA ATRASADOS RESULTARÁ NO CORTE DÁ ÁGUA"
     };
   }
-  // Garante que todos os apartamentos tenham o campo obs_boleto
-  bloco.leitura_atual = bloco.leitura_atual.map(apt => {
-    if (!apt.obs_boleto) apt.obs_boleto = "";
-    return apt;
-  });
-  salvarBlocos(blocos);
+// Garante que todos os apartamentos tenham o campo obs_boleto
+	  bloco.leitura_atual = bloco.leitura_atual.map(apt => {
+	    if (!apt.obs_boleto) apt.obs_boleto = "";
+	    return apt;
+	  });
+	  salvarBlocos(blocos);
+	
+	  // Atualiza o campo da conta Sabesp na UI
+	  const contaSabespInput = document.getElementById("contaSabesp");
+	  if (contaSabespInput) {
+	    contaSabespInput.value = bloco.contaSabesp.toFixed(2);
+	  }
+	
+	  // Chama a função de cálculo principal após a renderização
+	  calcularRateioSabesp(id);
 
   container.innerHTML = `
     <div class="bloco">
@@ -385,26 +412,20 @@ function editarInformacoesBloco(id) {
 }
 
 function salvarTarifaDoBloco(blocoIndex) {
-  const blocos = carregarBlocos();
-  const bloco = blocos[blocoIndex];
-
-  setTarifa(bloco, {
-    minimo: document.getElementById("tarifa-minimo-bloco").value,
-    faixa_11_20: document.getElementById("tarifa-11-20-bloco").value,
-    faixa_21_50: document.getElementById("tarifa-21-50-bloco").value
-  });
-
-  // Recalcula valores atuais com a nova tarifa
-  const tarifa = getTarifa(bloco);
-  bloco.leitura_atual = bloco.leitura_atual.map(apt => {
-    apt.total_rs = calcularValorEscalonado(apt.total_m3, tarifa).toFixed(2);
-    return apt;
-  });
-
-  salvarBlocos(blocos);
-  alert("Tarifas deste bloco salvas!");
-  renderizarBlocoIndividual();
-}
+	  const blocos = carregarBlocos();
+	  const bloco = blocos[blocoIndex];
+	
+	  setTarifa(bloco, {
+	    minimo: document.getElementById("tarifa-minimo-bloco").value,
+	    faixa_11_20: document.getElementById("tarifa-11-20-bloco").value,
+	    faixa_21_50: document.getElementById("tarifa-21-50-bloco").value
+	  });
+	
+	  salvarBlocos(blocos);
+	  recalcularValoresDoBloco(blocoIndex); // Recalcula todos os valores e faz o rateio da Sabesp
+	  showToast("Tarifas salvas com sucesso!");
+	  renderizarBlocoIndividual();
+	}
 
 function gerarTabelaLeituraAtual(bloco, blocoIndex) {
   return `
@@ -503,11 +524,13 @@ function atualizarCampo(blocoIndex, aptIndex, valor) {
   apt.total_m3 = Math.max(0, diff);
 
   const tarifa = getTarifa(bloco);
-  apt.total_rs = calcularValorEscalonado(apt.total_m3, tarifa).toFixed(2);
-
-  salvarBlocos(blocos);
-
-  // Atualiza UI
+	  const valorBase = calcularValorEscalonado(apt.total_m3, tarifa);
+	  apt.total_rs = valorBase.toFixed(2);
+	
+	  salvarBlocos(blocos);
+	  calcularRateioSabesp(blocoIndex); // Recalcula o rateio da Sabesp após a alteração
+	
+	  // Atualiza UI
   const m3El = document.getElementById(`m3-${blocoIndex}-${aptIndex}`);
   const rsEl = document.getElementById(`rs-${blocoIndex}-${aptIndex}`);
   if (m3El) m3El.textContent = apt.total_m3;
@@ -521,7 +544,82 @@ function editarCampo(blocoIndex, aptIndex, campo, valor) {
   salvarBlocos(blocos);
 }
 
-function salvarApartamentoDireto(blocoIndex, aptIndex) {
+// ============== LÓGICA SABESP ==============
+	function salvarContaSabesp() {
+	  const id = Number(new URLSearchParams(location.search).get("id"));
+	  const blocos = carregarBlocos();
+	  const bloco = blocos[id];
+	  if (!bloco) return;
+	
+	  const contaSabespInput = document.getElementById("contaSabesp");
+	  const novoValor = parseFloat(contaSabespInput.value) || 0;
+	
+	  bloco.contaSabesp = novoValor;
+	  salvarBlocos(blocos);
+	  calcularRateioSabesp(id);
+	}
+	
+	function calcularRateioSabesp(blocoIndex) {
+	  const blocos = carregarBlocos();
+	  const bloco = blocos[blocoIndex];
+	  if (!bloco) return;
+	
+	  const contaSabesp = bloco.contaSabesp || 0;
+	  const apartamentos = bloco.leitura_atual || [];
+	  const tarifa = getTarifa(bloco);
+	
+	  // 1. Recalcula o valor base de cada apartamento
+	  let totalArrecadadoBase = 0;
+	  apartamentos.forEach(apt => {
+	    const valorBase = calcularValorEscalonado(apt.total_m3, tarifa);
+	    apt.total_rs_base = valorBase.toFixed(2); // Salva o valor base
+	    apt.total_rs = valorBase.toFixed(2); // Inicializa o valor final com o base
+	    totalArrecadadoBase += valorBase;
+	  });
+	
+	  const diferenca = contaSabesp - totalArrecadadoBase;
+	
+	  if (diferenca > 0.01) { // Falta dinheiro (débito)
+	    // Distribui a diferença proporcionalmente ao consumo (m³)
+	    const totalM3 = apartamentos.reduce((acc, apt) => acc + apt.total_m3, 0);
+	    let totalRateado = 0;
+	
+	    apartamentos.forEach(apt => {
+	      if (totalM3 > 0) {
+	        const proporcao = apt.total_m3 / totalM3;
+	        const rateio = diferenca * proporcao;
+	        const novoTotal = parseFloat(apt.total_rs) + rateio;
+	        apt.total_rs = novoTotal.toFixed(2);
+	        totalRateado += rateio;
+	      }
+	    });
+	
+	    // Ajuste de arredondamento (se houver)
+	    const diferencaRateada = diferenca - totalRateado;
+	    if (diferencaRateada > 0.01) {
+	      // Adiciona o restante ao primeiro apartamento
+	      apartamentos[0].total_rs = (parseFloat(apartamentos[0].total_rs) + diferencaRateada).toFixed(2);
+	    }
+	
+	    salvarBlocos(blocos);
+	    renderizarBlocoIndividual(); // Força a re-renderização para atualizar a tabela
+	
+	    showToast(`⚠️ Débito de R$ ${diferenca.toFixed(2)} na conta Sabesp. O valor foi rateado proporcionalmente ao consumo.`, true);
+	
+	  } else if (diferenca < -0.01) { // Sobra dinheiro (crédito)
+	    const sobra = Math.abs(diferenca);
+	    showToast(`✅ Sobra de R$ ${sobra.toFixed(2)} no cálculo da conta Sabesp.`, false);
+	    // Não altera os valores individuais, apenas informa a sobra
+	  }
+	
+	  // Atualiza a tabela com os valores (se a função de renderização não for chamada)
+	  apartamentos.forEach((apt, aptIndex) => {
+	    const rsEl = document.getElementById(`rs-${blocoIndex}-${aptIndex}`);
+	    if (rsEl) rsEl.value = `R$ ${apt.total_rs}`;
+	  });
+	}
+	
+	function salvarApartamentoDireto(blocoIndex, aptIndex) {
   const blocos = carregarBlocos();
   const apt = blocos[blocoIndex].leitura_atual[aptIndex];
   const novoNumero = document.getElementById(`numero-${blocoIndex}-${aptIndex}`).value.trim();
@@ -634,10 +732,12 @@ function salvarLeituraDoMes(blocoIndex) {
     numero: apt.numero,
     responsavel: apt.responsavel,
     leitura_anterior: apt.leitura_atual,
-    leitura_atual: 0,
-    total_m3: 0,
-    total_rs: 0,
-    obs: ""
+	    leitura_atual: 0,
+	    total_m3: 0,
+	    total_rs: 0,
+	    obs: "",
+	    // Garante que o campo de rateio não seja transferido para a próxima leitura
+	    total_rs_base: 0
   }));
 
   salvarBlocos(blocos);
@@ -752,9 +852,10 @@ function importarLeituraAtual(event) {
       apt.obs = row["Observações"] || "";
     });
 
-    salvarBlocos(blocos);
-    alert("Leitura importada com sucesso!");
-    renderizarBlocoIndividual();
+salvarBlocos(blocos);
+	    calcularRateioSabesp(id); // Recalcula o rateio da Sabesp após a importação
+	    alert("Leitura importada com sucesso!");
+	    renderizarBlocoIndividual();
   };
 
   reader.readAsArrayBuffer(file);
