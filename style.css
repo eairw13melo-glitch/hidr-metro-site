@@ -148,6 +148,32 @@ input:focus, select:focus {
   outline: 2px solid var(--azul);
 }
 
+.input-curto {
+  width: 100px;
+  text-align: right;
+}
+
+.alerta-debito {
+  color: var(--vermelho); /* Vermelho */
+  background-color: #fdd;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.alerta-credito {
+  color: #27ae60; /* Verde */
+  background-color: #dfd;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.alerta-ok {
+  color: var(--texto); /* Cinza escuro */
+  background-color: #eee;
+  padding: 4px;
+  border-radius: 4px;
+}
+
 /* ======== Login ======== */
 .login-container {
   background: white;

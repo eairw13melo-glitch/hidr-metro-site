@@ -285,13 +285,16 @@ function renderizarBlocoIndividual() {
 	    contaSabespInput.value = bloco.contaSabesp.toFixed(2);
 	  }
 	
-	  // Chama a função de cálculo principal após a renderização
-	  calcularRateioSabesp(id);
-
-  container.innerHTML = `
-    <div class="bloco">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h2>${bloco.nome}</h2>
+// Chama a função de cálculo principal após a renderização
+		  calcularRateioSabesp(id);
+		
+		  // Atualiza os totais após o cálculo e antes da renderização final
+		  atualizarTotais(id);
+		
+		  container.innerHTML = `
+		    <div class="bloco">
+		      <div style="display:flex; justify-content:space-between; align-items:center;">
+		        <h2>${bloco.nome}</h2>
         <div class="acoes">
           <button type="button" onclick="editarInformacoesBloco(${id})">✏️ Editar</button>
           <button type="button" onclick="gerarExplicacaoWhatsApp(${id})" style="background-color: #25D366;">💬 Explicar Cálculo</button>
@@ -531,6 +534,7 @@ function atualizarCampo(blocoIndex, aptIndex, valor) {
 	  calcularRateioSabesp(blocoIndex); // Recalcula o rateio da Sabesp após a alteração
 	
 	  // Atualiza UI
+		  atualizarTotais(blocoIndex);
   const m3El = document.getElementById(`m3-${blocoIndex}-${aptIndex}`);
   const rsEl = document.getElementById(`rs-${blocoIndex}-${aptIndex}`);
   if (m3El) m3El.textContent = apt.total_m3;
@@ -612,11 +616,12 @@ function editarCampo(blocoIndex, aptIndex, campo, valor) {
 	    // Não altera os valores individuais, apenas informa a sobra
 	  }
 	
-	  // Atualiza a tabela com os valores (se a função de renderização não for chamada)
-	  apartamentos.forEach((apt, aptIndex) => {
-	    const rsEl = document.getElementById(`rs-${blocoIndex}-${aptIndex}`);
-	    if (rsEl) rsEl.value = `R$ ${apt.total_rs}`;
-	  });
+// Atualiza a tabela com os valores (se a função de renderização não for chamada)
+		  apartamentos.forEach((apt, aptIndex) => {
+		    const rsEl = document.getElementById(`rs-${blocoIndex}-${aptIndex}`);
+		    if (rsEl) rsEl.value = `R$ ${apt.total_rs}`;
+		  });
+		  atualizarTotais(blocoIndex);
 	}
 	
 	function salvarApartamentoDireto(blocoIndex, aptIndex) {
@@ -725,19 +730,247 @@ function salvarLeituraDoMes(blocoIndex) {
     try { fazerExport(); } catch (e) { console.error(e); alert("Falha ao exportar Excel, mas o histórico foi salvo."); }
   } else {
     alert("Histórico salvo. Para exportar Excel, verifique a conexão e recarregue a página (biblioteca não carregada).");
-  }
-
-  // 3) Prepara próxima rodada
-  bloco.leitura_atual = (bloco.leitura_atual || []).map(apt => ({
-    numero: apt.numero,
-    responsavel: apt.responsavel,
-    leitura_anterior: apt.leitura_atual,
-	    leitura_atual: 0,
-	    total_m3: 0,
-	    total_rs: 0,
-	    obs: "",
-	    // Garante que o campo de rateio não seja transferido para a próxima leitura
-	    total_rs_base: 0
+ // 3) Prepara próxima rodada
+		  bloco.leitura_atual = (bloco.leitura_atual || []).map(apt => ({
+		    numero: apt.numero,
+		    responsavel: apt.responsavel,
+		    leitura_anterior: apt.leitura_atual,
+		    leitura_atual: 0,
+		    total_m3: 0,
+		    total_rs: 0,
+		    obs: "",
+		    // Garante que o campo de rateio não seja transferido para a próxima leitura
+		    total_rs_base: 0
+		  }));
+		
+		  // Zera o valor da conta Sabesp para o próximo mês
+		  bloco.contaSabesp = 0.00;
+		
+		  salvarBlocos(blocos);
+		  renderizarBlocoIndividual();
+		  alert("Leitura salva no histórico. O valor da conta Sabesp foi zerado para o próximo mês.");
+		}  renderizarBlocoIndividual();
+		  alert("Leitura salva no histórico. O valor da conta Sabesp foi zerado para o próximo mês.");
+		}
+		
+		// ============== MELHORIA 2: TOTAIS E DIFERENÇA ==============
+		function atualizarTotais(blocoIndex) {
+		  const blocos = carregarBlocos();
+		  const bloco = blocos[blocoIndex];
+		  if (!bloco) return;
+		
+		  const apartamentos = bloco.leitura_atual || [];
+		  const contaSabesp = bloco.contaSabesp || 0;
+		
+		  const totalM3 = apartamentos.reduce((acc, apt) => acc + apt.total_m3, 0);
+		  const totalRS = apartamentos.reduce((acc, apt) => acc + parseFloat(apt.total_rs || 0), 0);
+		
+		  const diferenca = contaSabesp - totalRS;
+		  const diferencaFormatada = diferenca.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+		  const totalRSFormatado = totalRS.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+		
+		  const totalM3El = document.getElementById('total-m3');
+		  const totalRSEl = document.getElementById('total-rs');
+		  const diferencaEl = document.getElementById('diferenca-sabesp');
+		
+		  if (totalM3El) totalM3El.textContent = totalM3.toFixed(2);
+		  if (totalRSEl) totalRSEl.textContent = totalRSFormatado;
+		
+		  if (diferencaEl) {
+		    diferencaEl.textContent = `Diferença Sabesp: ${diferencaFormatada}`;
+		    diferencaEl.className = diferenca > 0.01 ? 'alerta-debito' : (diferenca < -0.01 ? 'alerta-credito' : 'alerta-ok');
+		  }
+		}
+		
+		// Chamada inicial para garantir que os totais sejam exibidos na primeira renderização
+		function renderizarBlocoIndividual() {
+		  const blocos = carregarBlocos();
+		  const id = Number(new URLSearchParams(location.search).get("id"));
+		  const bloco = blocos[id];
+		
+		  const container = document.getElementById("bloco-detalhes");
+		  if (!container) return;
+		
+		  if (!bloco) {
+		    container.innerHTML = `<div class="bloco"><h2>Bloco não encontrado.</h2></div>`;
+		    return;
+		  }
+		// saneamento
+		  if (!bloco.leitura_atual) bloco.leitura_atual = [];
+		  if (!bloco.historico) bloco.historico = {};
+		  if (!bloco.tarifaConfig) bloco.tarifaConfig = { ...DEFAULT_TARIFA };
+		  if (!bloco.contaSabesp) bloco.contaSabesp = 0.00; // Garante o campo da conta Sabesp
+		  if (!bloco.boletoConfig) {
+		    bloco.boletoConfig = {
+		      servico_leitura_rs: 6.25,
+		      condominio_rs: 50.00,
+		      multas_outros_rs: 0.00,
+		      obs_geral: "MULTA ATRASO BOLETO R$5,00\nTX RELIGAÇÃO DE AGUA R$20,00\nMULTA INFRAÇÃO DE NORMAS R$20,00\nDOIS BOLETOS DE ÁGUA ATRASADOS RESULTARÁ NO CORTE DÁ ÁGUA"
+		    };
+		  }
+		// Garante que todos os apartamentos tenham o campo obs_boleto
+		  bloco.leitura_atual = bloco.leitura_atual.map(apt => {
+		    if (!apt.obs_boleto) apt.obs_boleto = "";
+		    return apt;
+		  });
+		  salvarBlocos(blocos);
+		
+		  // Atualiza o campo da conta Sabesp na UI
+		  const contaSabespInput = document.getElementById("contaSabesp");
+		  if (contaSabespInput) {
+		    contaSabespInput.value = bloco.contaSabesp.toFixed(2);
+		  }
+		
+		  // Chama a função de cálculo principal após a renderização
+		  calcularRateioSabesp(id);
+		
+		  // Atualiza os totais após o cálculo e antes da renderização final
+		  atualizarTotais(id);
+		
+		  container.innerHTML = `
+		    <div class="bloco">
+		      <div style="display:flex; justify-content:space-between; align-items:center;">
+		        <h2>${bloco.nome}</h2>
+		        <div class="acoes">
+		          <button type="button" onclick="editarInformacoesBloco(${id})">✏️ Editar</button>
+		          <button type="button" onclick="gerarExplicacaoWhatsApp(${id})" style="background-color: #25D366;">💬 Explicar Cálculo</button>
+		        </div>
+		      </div>
+		      <p><strong>Endereço:</strong> ${bloco.endereco || "-"}</p>
+		      <p><strong>Síndico:</strong> ${bloco.sindico || "-"}</p>
+		
+		      <h3 style="margin-top:10px;">Configurações de Tarifa 💧</h3>
+		      <form class="tarifa-form" onsubmit="return false;">
+		        <label for="tarifa-minimo-bloco">Tarifa mínima (até 10 m³):</label>
+		        <input type="number" step="0.01" id="tarifa-minimo-bloco" class="input-curto">
+		
+		        <label for="tarifa-11-20-bloco">Tarifa por m³ de 11 a 20:</label>
+		        <input type="number" step="0.01" id="tarifa-11-20-bloco" class="input-curto">
+		
+		        <label for="tarifa-21-50-bloco">Tarifa por m³ de 21 a 50:</label>
+		        <input type="number" step="0.01" id="tarifa-21-50-bloco" class="input-curto">
+		
+		        <button onclick="salvarTarifa(${id})">Salvar Tarifas</button>
+		      </form>
+		
+		      <h3 style="margin-top:20px;">Leitura Atual - ${mesAtualLabel()}</h3>
+		      <div class="tabela-container">
+		        <table class="tabela-leituras">
+		          <thead>
+		            <tr>
+		              <th>Hidrômetro Nº</th>
+		              <th>Responsável</th>
+		              <th>Leitura Anterior</th>
+		              <th>Leitura Atual</th>
+		              <th>m³</th>
+		              <th>R$</th>
+		              <th>Observações</th>
+		              <th>Ações</th>
+		            </tr>
+		          </thead>
+		          <tbody>
+		            ${bloco.leitura_atual.map((apt, aptIndex) => `
+		              <tr>
+		                <td><input type="text" value="${apt.numero}" id="numero-${id}-${aptIndex}" onchange="editarCampo(${id}, ${aptIndex}, 'numero', this.value)"></td>
+		                <td><input type="text" value="${apt.responsavel}" onchange="editarCampo(${id}, ${aptIndex}, 'responsavel', this.value)"></td>
+		                <td><input type="number" value="${apt.leitura_anterior}" onchange="editarCampo(${id}, ${aptIndex}, 'leitura_anterior', this.value)"></td>
+		                <td><input type="number" value="${apt.leitura_atual}" onchange="atualizarCampo(${id}, ${aptIndex}, this.value)"></td>
+		                <td id="m3-${id}-${aptIndex}">${apt.total_m3}</td>
+		                <td><input type="text" value="R$ ${apt.total_rs}" id="rs-${id}-${aptIndex}" readonly></td>
+		                <td><input type="text" value="${apt.obs}" onchange="editarCampo(${id}, ${aptIndex}, 'obs', this.value)"></td>
+		                <td>
+		                  <button onclick="salvarApartamentoDireto(${id}, ${aptIndex})" title="Salvar e fechar ciclo">✅</button>
+		                  <button onclick="removerApartamento(${id}, ${aptIndex})" class="btn-danger-icon" title="Remover">🗑️</button>
+		                </td>
+		              </tr>
+		            `).join("")}
+		          </tbody>
+		          <tfoot>
+		            <tr>
+		              <td colspan="4" style="text-align: right; font-weight: bold;">Total:</td>
+		              <td id="total-m3" style="font-weight: bold;">0.00</td>
+		              <td id="total-rs" style="font-weight: bold;">R$ 0.00</td>
+		              <td colspan="2" id="diferenca-sabesp" class="alerta-ok" style="font-weight: bold; text-align: center;">Diferença Sabesp: R$ 0.00</td>
+		            </tr>
+		          </tfoot>
+		        </table>
+		      </div>
+		      <div class="acoes-tabela">
+		        <button onclick="adicionarApartamentoDireto(${id})">+ Adicionar Apartamento</button>
+		        <button onclick="salvarLeituraDoMes(${id})" class="btn-primary">💾 Fechar Leitura do Mês</button>
+		      </div>
+		
+		      <h3 style="margin-top:20px;">Histórico de Leituras</h3>
+		      <div class="historico-container">
+		        ${Object.keys(bloco.historico).sort().reverse().map(mes => `
+		          <div class="historico-item">
+		            <span>${formatarMesLabel(mes)}</span>
+		            <div class="acoes">
+		              <button onclick="visualizarHistorico(${id}, '${mes}')">🔍 Visualizar</button>
+		              <button onclick="exportarHistorico(${id}, '${mes}')">📤 Exportar Excel</button>
+		              <button onclick="excluirHistorico(${id}, '${mes}')" class="btn-danger-icon">🗑️</button>
+		            </div>
+		          </div>
+		        `).join("")}
+		      </div>
+		
+		      <div id="historico-modal" class="modal">
+		        <div class="modal-content">
+		          <span class="close-button" onclick="document.getElementById('historico-modal').style.display='none'">&times;</span>
+		          <h3 id="historico-modal-titulo"></h3>
+		          <div id="historico-modal-corpo"></div>
+		        </div>
+		      </div>
+		
+		    </div>
+		  `;
+		
+		  // Preenche os campos de tarifa
+		  const tarifa = getTarifa(bloco);
+		  document.getElementById("tarifa-minimo-bloco").value = tarifa.minimo;
+		  document.getElementById("tarifa-11-20-bloco").value = tarifa.faixa_11_20;
+		  document.getElementById("tarifa-21-50-bloco").value = tarifa.faixa_21_50;
+		
+		  // Preenche o campo da conta Sabesp (já feito no saneamento, mas garantindo)
+		  if (contaSabespInput) {
+		    contaSabespInput.value = bloco.contaSabesp.toFixed(2);
+		  }
+		
+		  // Garante que os totais sejam exibidos
+		  atualizarTotais(id);
+		}
+		
+		// Função auxiliar para salvar a conta Sabesp (já existe, mas garantindo a chamada correta)
+		function salvarContaSabesp() {
+		  const id = Number(new URLSearchParams(location.search).get("id"));
+		  const blocos = carregarBlocos();
+		  const bloco = blocos[id];
+		  if (!bloco) return;
+		
+		  const contaSabespInput = document.getElementById("contaSabesp");
+		  const novoValor = parseFloat(contaSabespInput.value) || 0;
+		
+		  bloco.contaSabesp = novoValor;
+		  salvarBlocos(blocos);
+		  calcularRateioSabesp(id);
+		}
+		
+		// Função auxiliar para salvar a conta Sabesp (já existe, mas garantindo a chamada correta)
+		function salvarContaSabesp() {
+		  const id = Number(new URLSearchParams(location.search).get("id"));
+		  const blocos = carregarBlocos();
+		  const bloco = blocos[id];
+		  if (!bloco) return;
+		
+		  const contaSabespInput = document.getElementById("contaSabesp");
+		  const novoValor = parseFloat(contaSabespInput.value) || 0;
+		
+		  bloco.contaSabesp = novoValor;
+		  salvarBlocos(blocos);
+		  calcularRateioSabesp(id);
+		}
+		
+		// ... (restante do código)
   }));
 
   salvarBlocos(blocos);
@@ -913,6 +1146,81 @@ function resetarBloco(id) {
   salvarBlocos(blocos);
   renderizarBlocoIndividual();
   alert("Bloco resetado.");
+}
+
+function exportarHistorico(blocoIndex, mes) {
+  checarXLSX(() => {
+    const blocos = carregarBlocos();
+    const bloco = blocos[blocoIndex];
+    if (!bloco) { alert("Bloco não encontrado."); return; }
+
+    const dados = bloco.historico[mes];
+    if (!dados) { alert("Histórico não encontrado."); return; }
+
+    const nomeBloco = bloco.nome || "Bloco";
+    const mesFormatado = mes.replace("-", "_");
+    
+    exportarParaExcel(dados, nomeBloco, mesFormatado);
+  });
+}
+
+function visualizarHistorico(blocoIndex, mes) {
+  const blocos = carregarBlocos();
+  const bloco = blocos[blocoIndex];
+  if (!bloco) return;
+
+  const dados = bloco.historico[mes];
+  if (!dados) {
+    alert("Histórico não encontrado.");
+    return;
+  }
+
+  const modal = document.getElementById('historico-modal');
+  const titulo = document.getElementById('historico-modal-titulo');
+  const corpo = document.getElementById('historico-modal-corpo');
+
+  titulo.textContent = `Histórico de ${formatarMesLabel(mes)} - ${bloco.nome}`;
+  
+  corpo.innerHTML = `
+    <div class="tabela-container">
+      <table class="tabela-leituras">
+        <thead>
+          <tr>
+            <th>Hidrômetro Nº</th>
+            <th>Responsável</th>
+            <th>Leitura Anterior</th>
+            <th>Leitura Atual</th>
+            <th>m³</th>
+            <th>R$</th>
+            <th>Observações</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${dados.map(apt => `
+            <tr>
+              <td>${apt.numero}</td>
+              <td>${apt.responsavel}</td>
+              <td>${apt.leitura_anterior}</td>
+              <td>${apt.leitura_atual}</td>
+              <td>${apt.total_m3}</td>
+              <td>R$ ${apt.total_rs}</td>
+              <td>${apt.obs}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  modal.style.display = 'block';
+}
+
+// Fechar modal ao clicar fora
+window.onclick = function(event) {
+  const modal = document.getElementById('historico-modal');
+  if (event.target == modal) {
+    modal.style.display = "none";
+  }
 }
 
 /* ==================== BOLETOS (robusto) ==================== */

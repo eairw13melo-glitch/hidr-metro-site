@@ -74,6 +74,10 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
     resetarTentativas();
     sessionStorage.setItem("token", gerarToken());
     localStorage.setItem("logado", "true");
+    
+    // AVISO DE SEGURANÇA: Este sistema não é seguro para produção.
+    alert("AVISO DE SEGURANÇA: O login atual é fixo (admin/1234) e o status de login é armazenado localmente (localStorage). Este sistema NÃO é seguro para uso em produção ou com dados sensíveis. Considere implementar um backend com autenticação real.");
+    
     location.href = "dashboard.html";
     showToast("Login realizado com sucesso!");
   } else {
