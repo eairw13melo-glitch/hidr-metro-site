@@ -142,14 +142,16 @@ function criarBloco() {
   // Pré-popula 32 apartamentos como exemplo
   const leitura_atual = [];
   for (let i = 1; i <= 32; i++) {
-    leitura_atual.push({
+      leitura_atual.push({
       numero: `${100 + i}-A`,
       responsavel: "",
       leitura_anterior: 0,
       leitura_atual: 0,
       total_m3: 0,
       total_rs: 0,
-      obs: ""
+      obs: "",
+      // Novo campo para observação individual do boleto
+      obs_boleto: ""
     });
   }
 
@@ -157,7 +159,14 @@ function criarBloco() {
     nome, endereco, sindico,
     leitura_atual,
     historico: {},
-    tarifaConfig: { ...DEFAULT_TARIFA } // 👈 tarifas independentes por bloco
+    tarifaConfig: { ...DEFAULT_TARIFA }, // 👈 tarifas independentes por bloco
+    // Novos campos para boletos (padrão do bloco)
+    boletoConfig: {
+      servico_leitura_rs: 6.25, // Valor padrão do modelo
+      condominio_rs: 50.00, // Valor padrão do modelo
+      multas_outros_rs: 0.00,
+      obs_geral: "MULTA ATRASO BOLETO R$5,00\nTX RELIGAÇÃO DE AGUA R$20,00\nMULTA INFRAÇÃO DE NORMAS R$20,00\nDOIS BOLETOS DE ÁGUA ATRASADOS RESULTARÁ NO CORTE DÁ ÁGUA"
+    }
   });
 
   salvarBlocos(blocos);
@@ -237,6 +246,19 @@ function renderizarBlocoIndividual() {
   if (!bloco.leitura_atual) bloco.leitura_atual = [];
   if (!bloco.historico) bloco.historico = {};
   if (!bloco.tarifaConfig) bloco.tarifaConfig = { ...DEFAULT_TARIFA };
+  if (!bloco.boletoConfig) {
+    bloco.boletoConfig = {
+      servico_leitura_rs: 6.25,
+      condominio_rs: 50.00,
+      multas_outros_rs: 0.00,
+      obs_geral: "MULTA ATRASO BOLETO R$5,00\nTX RELIGAÇÃO DE AGUA R$20,00\nMULTA INFRAÇÃO DE NORMAS R$20,00\nDOIS BOLETOS DE ÁGUA ATRASADOS RESULTARÁ NO CORTE DÁ ÁGUA"
+    };
+  }
+  // Garante que todos os apartamentos tenham o campo obs_boleto
+  bloco.leitura_atual = bloco.leitura_atual.map(apt => {
+    if (!apt.obs_boleto) apt.obs_boleto = "";
+    return apt;
+  });
   salvarBlocos(blocos);
 
   container.innerHTML = `
@@ -265,6 +287,23 @@ function renderizarBlocoIndividual() {
         <button type="button" onclick="salvarTarifaDoBloco(${id})">💾 Salvar Tarifas deste Bloco</button>
       </form>
 
+      <h3 style="margin-top:10px;">Configurações de Boleto 🧾</h3>
+      <form class="boleto-form" onsubmit="return false;">
+        <label for="boleto-servico-leitura">Serviço de Leitura (R$):</label>
+        <input type="number" step="0.01" id="boleto-servico-leitura" class="input-curto">
+
+        <label for="boleto-condominio">Condomínio (R$):</label>
+        <input type="number" step="0.01" id="boleto-condominio" class="input-curto">
+
+        <label for="boleto-multas-outros">Multas / Outros (R$):</label>
+        <input type="number" step="0.01" id="boleto-multas-outros" class="input-curto">
+
+        <label for="boleto-obs-geral">Observações Gerais (para todos os boletos):</label>
+        <textarea id="boleto-obs-geral" rows="4"></textarea>
+
+        <button type="button" onclick="salvarBoletoConfigDoBloco(${id})">💾 Salvar Configurações de Boleto</button>
+      </form>
+
       <div class="acoes">
         <button type="button" onclick="adicionarApartamentoDireto(${id})">+ Adicionar Apartamento</button>
         <button type="button" onclick="salvarLeituraDoMes(${id})">💾 Salvar Leitura do Mês</button>
@@ -278,8 +317,34 @@ function renderizarBlocoIndividual() {
     ${gerarHistorico(bloco)}
   `;
 
-  // Preencher form de tarifa
-  preencherTarifaForm(bloco);
+	  // Preencher form de tarifa
+	  preencherTarifaForm(bloco);
+	  // Preencher form de boleto
+	  preencherBoletoConfigForm(bloco);
+	}
+
+function preencherBoletoConfigForm(bloco) {
+  const b = bloco.boletoConfig;
+  document.getElementById("boleto-servico-leitura").value = b.servico_leitura_rs;
+  document.getElementById("boleto-condominio").value = b.condominio_rs;
+  document.getElementById("boleto-multas-outros").value = b.multas_outros_rs;
+  document.getElementById("boleto-obs-geral").value = b.obs_geral;
+}
+
+function salvarBoletoConfigDoBloco(blocoIndex) {
+  const blocos = carregarBlocos();
+  const bloco = blocos[blocoIndex];
+
+  bloco.boletoConfig = {
+    servico_leitura_rs: Number(document.getElementById("boleto-servico-leitura").value) || 0,
+    condominio_rs: Number(document.getElementById("boleto-condominio").value) || 0,
+    multas_outros_rs: Number(document.getElementById("boleto-multas-outros").value) || 0,
+    obs_geral: document.getElementById("boleto-obs-geral").value
+  };
+
+  salvarBlocos(blocos);
+  showToast("Configurações de boleto salvas!");
+  renderizarBlocoIndividual();
 }
 
 function preencherTarifaForm(bloco) {
@@ -352,7 +417,8 @@ function gerarTabelaLeituraAtual(bloco, blocoIndex) {
           <th>Atual</th>
           <th>m³</th>
           <th>R$</th>
-          <th>Obs</th>
+          <th>Obs (Leitura)</th>
+          <th>Obs (Boleto)</th>
           <th>Ações</th>
         </tr>
       </thead>
@@ -371,6 +437,7 @@ function gerarTabelaLeituraAtual(bloco, blocoIndex) {
             <td id="m3-${blocoIndex}-${i}">${apt.total_m3}</td>
             <td><input type="text" id="rs-${blocoIndex}-${i}" class="media" value="R$ ${apt.total_rs}" readonly></td>
             <td><input type="text" value="${apt.obs}" onchange="editarCampo(${blocoIndex}, ${i}, 'obs', this.value)"></td>
+            <td><input type="text" value="${apt.obs_boleto}" onchange="editarCampo(${blocoIndex}, ${i}, 'obs_boleto', this.value)"></td>
             <td>
               <button type="button" onclick="salvarApartamentoDireto(${blocoIndex}, ${i})">💾</button>
               <button type="button" class="btn-danger" onclick="removerApartamento(${blocoIndex}, ${i})">🗑️</button>
@@ -793,11 +860,16 @@ function renderizarBoletosPage() {
   // fonte de dados
   let dados = [];
   const origem = selOrigem ? selOrigem.value : "atual";
-  if (origem === "atual") dados = (bloco.leitura_atual || []).slice();
-  else if (origem.startsWith("hist:")) {
+  let mesReferencia = mesAtual(); // Padrão para o mês atual
+  if (origem === "atual") {
+    dados = (bloco.leitura_atual || []).slice();
+  } else if (origem.startsWith("hist:")) {
     const mes = origem.split(":")[1];
     dados = (bloco.historico?.[mes] || []).slice();
+    mesReferencia = mes;
   }
+
+  const mesReferenciaLabel = formatarMesLabel(mesReferencia).toUpperCase();
 
   // filtro
   const filtro = (inpFiltro?.value || "").trim().toLowerCase();
@@ -824,46 +896,117 @@ function renderizarBoletosPage() {
   grupos.forEach(dupla => {
     const sheet = document.createElement('section');
     sheet.className = 'boleto-sheet';
-    sheet.appendChild(criarBoletoHalf(dupla[0], vencLabel));
+    sheet.appendChild(criarBoletoHalf(dupla[0], vencLabel, mesReferenciaLabel, bloco));
     const cut = document.createElement('div');
     cut.className = 'cut-line';
     cut.innerHTML = `<span>— — — — — — — — — — — — — —  ✂  — — — — — — — — — — — — — —</span>`;
     sheet.appendChild(cut);
-    sheet.appendChild(criarBoletoHalf(dupla[1], vencLabel));
+    sheet.appendChild(criarBoletoHalf(dupla[1], vencLabel, mesReferenciaLabel, bloco));
     root.appendChild(sheet);
   });
 }
 
-function criarBoletoHalf(apt, vencLabel) {
+function criarBoletoHalf(apt, vencLabel, mesReferenciaLabel, bloco) {
   const half = document.createElement('div');
   half.className = 'boleto-half';
 
   if (!apt) {
     half.innerHTML = `
-      <div class="boleto-head"><div class="apt">&nbsp;</div><div class="vcto">&nbsp;</div></div>
-      <div class="boleto-lines"></div>
-      <div class="boleto-total">
-        <div class="cell">TOTAL</div><div class="cell">VALOR &gt;</div>
-        <div class="cell">&nbsp;</div><div class="cell">&nbsp;</div>
+      <div class="boleto-header-row">
+        <div class="boleto-apt-info">APTO</div>
+        <div class="boleto-vencimento">Vencimento > ${vencLabel || "--/--/----"}</div>
       </div>
-      <div class="boleto-obs"><div class="label">OBS:</div><div class="area"></div></div>`;
+      <div class="boleto-header-row">
+        <div class="boleto-responsavel-label">RESPONSÁVEL</div>
+        <div class="boleto-responsavel-nome">&nbsp;</div>
+      </div>
+      <div class="boleto-header-row">
+        <div class="boleto-mes-ref-label">MÊS E ANO DE REFERÊNCIA</div>
+        <div class="boleto-mes-ref-valor">${mesReferenciaLabel || "--/----"}</div>
+      </div>
+      <div class="boleto-lines-placeholder"></div>
+      <div class="boleto-total-placeholder"></div>
+      <div class="boleto-obs-placeholder"></div>
+      <div class="boleto-recebido-por">RECEBIDO POR:</div>
+    `;
     return half;
   }
 
-  const valor = Number(apt.total_rs || 0);
+  const bConfig = bloco.boletoConfig || {};
+  const servicoLeitura = Number(bConfig.servico_leitura_rs || 0);
+  const condominio = Number(bConfig.condominio_rs || 0);
+  const multasOutros = Number(bConfig.multas_outros_rs || 0);
+  const ttConsumo = Number(apt.total_rs || 0);
+  const total = servicoLeitura + ttConsumo + condominio + multasOutros;
+
+  const obsGeral = bConfig.obs_geral || "";
+  const obsApto = apt.obs_boleto || "";
+  const obsCompleta = obsGeral + (obsGeral && obsApto ? "\n" : "") + obsApto;
+
+  // Simulação de datas de leitura (não temos as datas reais, então usamos um placeholder)
+  const dataLeituraAnt = "06/10/2025"; // Placeholder
+  const dataLeituraAtual = "04/11/2025"; // Placeholder
+
   half.innerHTML = `
-    <div class="boleto-head">
-      <div class="apt">${escapeHtml(String(apt.numero || "APTO"))}</div>
-      <div class="vcto">Vencimento &gt; ${vencLabel || "--/--/----"}</div>
+    <div class="boleto-header-row">
+      <div class="boleto-apt-info">${escapeHtml(String(apt.numero || "APTO"))}</div>
+      <div class="boleto-vencimento">Vencimento > ${vencLabel || "--/--/----"}</div>
     </div>
-    <div class="boleto-lines"></div>
-    <div class="boleto-total">
-      <div class="cell">TOTAL</div>
-      <div class="cell">VALOR &gt;</div>
-      <div class="cell" style="min-width:120px;text-align:right;">${brl(valor)}</div>
-      <div class="cell" style="min-width:40px;">&nbsp;</div>
+    <div class="boleto-header-row">
+      <div class="boleto-responsavel-label">RESPONSÁVEL</div>
+      <div class="boleto-responsavel-nome">${escapeHtml(apt.responsavel || "-")}</div>
     </div>
-    <div class="boleto-obs"><div class="label">OBS:</div><div class="area">${escapeHtml(apt.obs || "")}</div></div>`;
+    <div class="boleto-header-row">
+      <div class="boleto-mes-ref-label">MÊS E ANO DE REFERÊNCIA</div>
+      <div class="boleto-mes-ref-valor">${mesReferenciaLabel || "--/----"}</div>
+    </div>
+
+    <div class="boleto-lines">
+      <div class="line-item">
+        <div class="item-label">LEITURA HIDRÔMETRO ANTERIOR</div>
+        <div class="item-date">${dataLeituraAnt}</div>
+        <div class="item-value">${apt.leitura_anterior}</div>
+        <div class="item-unit"></div>
+      </div>
+      <div class="line-item">
+        <div class="item-label">LEITURA HIDRÔMETRO ATUAL</div>
+        <div class="item-date">${dataLeituraAtual}</div>
+        <div class="item-value">${apt.leitura_atual}</div>
+        <div class="item-unit">${apt.total_m3} M³</div>
+      </div>
+      <div class="line-item">
+        <div class="item-label">SERVIÇO DE LEITURA HIDRÔMETRO</div>
+        <div class="item-date">VALOR ></div>
+        <div class="item-value-rs">${brl(servicoLeitura)}</div>
+      </div>
+      <div class="line-item">
+        <div class="item-label">TT CONSUMO</div>
+        <div class="item-date">VALOR ></div>
+        <div class="item-value-rs">${brl(ttConsumo)}</div>
+      </div>
+      <div class="line-item">
+        <div class="item-label">CONDOMÍNIO</div>
+        <div class="item-date">VALOR ></div>
+        <div class="item-value-rs">${brl(condominio)}</div>
+      </div>
+      <div class="line-item">
+        <div class="item-label">MULTAS / OUTROS</div>
+        <div class="item-date">VALOR ></div>
+        <div class="item-value-rs">${brl(multasOutros)}</div>
+      </div>
+      <div class="line-item total-line">
+        <div class="item-label">TOTAL</div>
+        <div class="item-date">VALOR ></div>
+        <div class="item-value-rs">${brl(total)}</div>
+      </div>
+    </div>
+
+    <div class="boleto-obs">
+      <div class="label">OBS:</div>
+      <div class="area">${escapeHtml(obsCompleta).replace(/\n/g, '<br>')}</div>
+    </div>
+    <div class="boleto-recebido-por">RECEBIDO POR:</div>
+  `;
   return half;
 }
 
