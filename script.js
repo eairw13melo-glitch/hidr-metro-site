@@ -1014,17 +1014,112 @@ function renderizarBoletosPage() {
     return;
   }
 
+  // Criar CAPA
+  const capa = document.createElement('section');
+  capa.className = 'boleto-capa';
+  const totalSabesp = bloco.contaSabesp || 0;
+  capa.innerHTML = `
+    <div class="capa-content">
+      <h1>Boletos de Água</h1>
+      <h2>${escapeHtml(bloco.nome || 'Bloco')}</h2>
+      <div class="capa-info">
+        <p><strong>Endereço:</strong> ${escapeHtml(bloco.endereco || '-')}</p>
+        <p><strong>Síndico:</strong> ${escapeHtml(bloco.sindico || '-')}</p>
+        <p><strong>Mês de Referência:</strong> ${mesReferenciaLabel}</p>
+        <p><strong>Vencimento:</strong> ${vencLabel || '--/--/----'}</p>
+      </div>
+      <div class="capa-destaque">
+        <p class="capa-label">Valor Total da Conta Sabesp</p>
+        <p class="capa-valor">${brl(totalSabesp)}</p>
+      </div>
+      <div class="capa-rodape">
+        <p>Total de apartamentos: ${dados.length}</p>
+        <p>Data de emissão: ${new Date().toLocaleDateString('pt-BR')}</p>
+      </div>
+    </div>
+  `;
+  root.appendChild(capa);
+
   grupos.forEach(dupla => {
     const sheet = document.createElement('section');
     sheet.className = 'boleto-sheet';
+    
+    // Linha de corte antes do primeiro boleto
+    const cutTop = document.createElement('div');
+    cutTop.className = 'cut-line';
+    cutTop.innerHTML = `<span>— — — — — — — — — — — — — —  ✂  — — — — — — — — — — — — — —</span>`;
+    sheet.appendChild(cutTop);
+    
     sheet.appendChild(criarBoletoHalf(dupla[0], vencLabel, mesReferenciaLabel, bloco));
+    
     const cut = document.createElement('div');
     cut.className = 'cut-line';
     cut.innerHTML = `<span>— — — — — — — — — — — — — —  ✂  — — — — — — — — — — — — — —</span>`;
     sheet.appendChild(cut);
+    
     sheet.appendChild(criarBoletoHalf(dupla[1], vencLabel, mesReferenciaLabel, bloco));
+    
+    // Linha de corte após o segundo boleto
+    const cutBottom = document.createElement('div');
+    cutBottom.className = 'cut-line';
+    cutBottom.innerHTML = `<span>— — — — — — — — — — — — — —  ✂  — — — — — — — — — — — — — —</span>`;
+    sheet.appendChild(cutBottom);
+    
     root.appendChild(sheet);
   });
+
+  // Criar CONTRACAPA
+  const contracapa = document.createElement('section');
+  contracapa.className = 'boleto-contracapa';
+  
+  // Calcular totais
+  let totalM3 = 0;
+  let totalValor = 0;
+  dados.forEach(apt => {
+    totalM3 += Number(apt.total_m3) || 0;
+    totalValor += Number(apt.total_rs) || 0;
+  });
+  
+  contracapa.innerHTML = `
+    <div class="contracapa-content">
+      <h2>Resumo da Cobrança</h2>
+      <div class="contracapa-info">
+        <h3>${escapeHtml(bloco.nome || 'Bloco')}</h3>
+        <p><strong>Mês de Referência:</strong> ${mesReferenciaLabel}</p>
+      </div>
+      <div class="contracapa-totais">
+        <div class="total-item">
+          <span class="total-label">Total de Apartamentos:</span>
+          <span class="total-valor">${dados.length}</span>
+        </div>
+        <div class="total-item">
+          <span class="total-label">Consumo Total (m³):</span>
+          <span class="total-valor">${totalM3.toFixed(2)}</span>
+        </div>
+        <div class="total-item">
+          <span class="total-label">Valor Total Arrecadado:</span>
+          <span class="total-valor">${brl(totalValor)}</span>
+        </div>
+        <div class="total-item destaque">
+          <span class="total-label">Conta Sabesp:</span>
+          <span class="total-valor">${brl(bloco.contaSabesp || 0)}</span>
+        </div>
+        <div class="total-item ${(totalValor - (bloco.contaSabesp || 0)) >= 0 ? 'positivo' : 'negativo'}">
+          <span class="total-label">Diferença:</span>
+          <span class="total-valor">${brl(totalValor - (bloco.contaSabesp || 0))}</span>
+        </div>
+      </div>
+      <div class="contracapa-obs">
+        <p><strong>Observações:</strong></p>
+        <p>Este documento contém os boletos de água referentes ao mês de ${mesReferenciaLabel}.</p>
+        <p>Em caso de dúvidas, entre em contato com o síndico: ${escapeHtml(bloco.sindico || '-')}</p>
+      </div>
+      <div class="contracapa-rodape">
+        <p>Documento gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
+      </div>
+    </div>
+  `;
+  root.appendChild(contracapa);
 }
 
 function criarBoletoHalf(apt, vencLabel, mesReferenciaLabel, bloco) {
@@ -1048,7 +1143,12 @@ function criarBoletoHalf(apt, vencLabel, mesReferenciaLabel, bloco) {
       <div class="boleto-lines-placeholder"></div>
       <div class="boleto-total-placeholder"></div>
       <div class="boleto-obs-placeholder"></div>
-      <div class="boleto-recebido-por">RECEBIDO POR:</div>
+      <div class="boleto-assinatura">
+        <div class="assinatura-linha">
+          <div class="assinatura-label">SÍNDICO:</div>
+          <div class="assinatura-campo">${escapeHtml(bloco.sindico || '_______________________________________')}</div>
+        </div>
+      </div>
     `;
     return half;
   }
@@ -1126,7 +1226,16 @@ function criarBoletoHalf(apt, vencLabel, mesReferenciaLabel, bloco) {
       <div class="label">OBS:</div>
       <div class="area">${escapeHtml(obsCompleta).replace(/\n/g, '<br>')}</div>
     </div>
-    <div class="boleto-recebido-por">RECEBIDO POR:</div>
+    <div class="boleto-assinatura">
+      <div class="assinatura-linha">
+        <div class="assinatura-label">RECEBIDO POR:</div>
+        <div class="assinatura-campo">_______________________________________</div>
+      </div>
+      <div class="assinatura-linha">
+        <div class="assinatura-label">DATA:</div>
+        <div class="assinatura-campo-data">____/____/________</div>
+      </div>
+    </div>
   `;
   return half;
 }
