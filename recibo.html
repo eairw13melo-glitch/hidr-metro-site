@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Gerador de Recibo</title>
+  <link rel="stylesheet" href="style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    /* Estilos específicos para o Gerador de Recibo */
+    body {
+      background-color: #f4f4f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      flex-direction: column;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      width: 100%;
+      margin-bottom: 20px;
+      color: var(--azul-escuro);
+    }
+
+    .form-container {
+      max-width: 500px;
+      background: #fff;
+      padding: 30px;
+      border-radius: var(--radius);
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .form-container label {
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 5px;
+      display: block;
+      width: 100%;
+      text-align: left;
+      font-weight: bold;
+    }
+
+    .form-container input,
+    .form-container select {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      box-sizing: border-box;
+    }
+
+    .form-container input[type="date"] {
+      width: 100%;
+    }
+
+    .form-buttons {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .form-buttons button {
+      width: 48%;
+      padding: 12px;
+      font-size: 16px;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .gerar-button {
+      background-color: #4CAF50;
+    }
+
+    .limpar-button {
+      background-color: #f44336;
+    }
+
+    .recibo-container {
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 30px;
+      margin-top: 30px;
+      max-width: 700px;
+      background-color: #fff;
+      display: none;
+      position: relative;
+      width: 100%;
+      text-align: center;
+    }
+
+    .recibo-numero {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-weight: bold;
+      font-size: 1.1rem;
+    }
+
+    .recibo-logo {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .recibo-logo img {
+      max-width: 150px;
+      height: auto;
+    }
+
+    .recibo-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: bold;
+      margin-bottom: 30px;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 10px;
+    }
+
+    .recibo-header span:last-child {
+      border: 1px solid #333;
+      padding: 5px 10px;
+      border-radius: 5px;
+      background-color: #f9f9f9;
+    }
+
+    .recibo-body {
+      font-size: 16px;
+      line-height: 1.6;
+      text-align: justify;
+      margin-bottom: 30px;
+    }
+
+    .recibo-body strong {
+      font-weight: bold;
+    }
+
+    .assinatura {
+      margin-top: 60px;
+      text-align: right;
+      position: relative;
+      padding-right: 20px;
+    }
+
+    .assinatura-wrapper {
+      display: inline-block;
+      text-align: center;
+    }
+
+    .assinatura-wrapper hr {
+      margin-top: 20px;
+      margin-bottom: 5px;
+      border: none;
+      border-top: 1px solid #000;
+    }
+
+    .assinatura-img {
+      position: absolute;
+      top: -55px;
+      right: 50px; /* Ajuste para centralizar a assinatura */
+      width: 155px;
+      height: auto;
+      opacity: 0.95;
+    }
+
+    .recibo-footer {
+      text-align: right;
+      margin-top: 30px;
+      font-size: 15px;
+    }
+
+    .print-button {
+      background-color: #2196F3;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+
+      .recibo-container, .recibo-container * {
+        visibility: visible;
+      }
+
+      .recibo-container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        border: none;
+        box-shadow: none;
+      }
+
+      .form-container, .print-button {
+        display: none;
+      }
+      
+      .assinatura-img {
+        right: 50px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<h1>Gerador de Recibo</h1>
+
+<div class="form-container">
+  <label for="valor">Valor (R$)</label>
+  <input type="number" id="valor" placeholder="200.00" step="0.01" />
+
+  <label for="pagador">Pagador</label>
+  <select id="pagador">
+    <option value="Condomínio Nova Esperança - Bloco 2058">Condomínio Nova Esperança - Bloco 2058</option>
+    <option value="Condomínio Vitória - Bloco 2060">Condomínio Vitória - Bloco 2060</option>
+    <option value="Condomínio Primavera - Bloco 1938">Condomínio Primavera - Bloco 1938</option>
+    <option value="Bloco 1940">Bloco 1940</option>
+    <option value="Bloco 1968">Bloco 1968</option>
+    <option value="Bloco 1970">Bloco 1970</option>
+  </select>
+
+  <label for="referente">Referente</label>
+  <select id="referente">
+    <option value="Leitura referente ao mês de abril de 2025">Leitura referente ao mês de abril de 2025</option>
+    <option value="Leitura referente ao mês de maio de 2025">Leitura referente ao mês de maio de 2025</option>
+    <option value="Leitura referente ao mês de junho de 2025">Leitura referente ao mês de junho de 2025</option>
+    <option value="Leitura referente ao mês de julho de 2025">Leitura referente ao mês de julho de 2025</option>
+    <option value="Leitura referente ao mês de agosto de 2025">Leitura referente ao mês de agosto de 2025</option>
+    <option value="Leitura referente ao mês de setembro de 2025">Leitura referente ao mês de setembro de 2025</option>
+    <option value="Leitura referente ao mês de outubro de 2025">Leitura referente ao mês de outubro de 2025</option>
+    <option value="Leitura referente ao mês de novembro de 2025">Leitura referente ao mês de novembro de 2025</option>
+    <option value="Leitura referente ao mês de dezembro de 2025">Leitura referente ao mês de dezembro de 2025</option>
+  </select>
+
+  <label for="data">Data de Pagamento</label>
+  <input type="date" id="data" value="2025-05-02" />
+
+  <label for="formaPagamento">Forma de Pagamento</label>
+  <select id="formaPagamento">
+    <option value="Dinheiro">Dinheiro</option>
+    <option value="Pix">Pix</option>
+    <option value="Cheque">Cheque</option>
+    <option value="Transferência/Depósito">Transferência/Depósito</option>
+    <option value="Cartão de Crédito/Débito">Cartão de Crédito/Débito</option>
+    <option value="Boleto">Boleto</option>
+  </select>
+
+  <div class="form-buttons">
+    <button class="gerar-button" onclick="gerarRecibo()">Gerar Recibo</button>
+    <button class="limpar-button" onclick="limparTudo()">Limpar</button>
+  </div>
+</div>
+
+<div class="recibo-container" id="reciboContainer">
+  <div class="recibo-numero" id="reciboNumero">Recibo nº 01</div>
+  <div class="recibo-logo">
+    <img src="logorecibo.png" alt="Logo" />
+  </div>
+  <div class="recibo-header">
+    <span>Recibo de Pagamento</span>
+    <span id="valorFormatado">R$ 0,00</span>
+  </div>
+
+  <div class="recibo-body" id="reciboTexto"></div>
+
+  <div class="assinatura">
+    <div class="recibo-footer" id="reciboData"></div>
+    <div class="assinatura-wrapper">
+      <img src="assinatura.png" alt="Assinatura" class="assinatura-img" />
+      <hr />
+      <strong>RAFAEL WANDERLEY MELO</strong><br />
+      <small>(15) 9 9793-9699</small>
+    </div>
+  </div>
+
+  <button class="print-button" onclick="window.print()">Imprimir</button>
+</div>
+
+<script src="script.js"></script>
+<script>
+  // A lógica de geração de recibo será adicionada aqui ou em um arquivo JS separado
+  // Por enquanto, vamos garantir que o script.js principal não interfira
+  
+  // Função para converter número para extenso (necessária para o recibo)
+  function numeroPorExtenso(n) {
+    if (typeof n !== 'number') return '';
+    
+    const unidades = ["", "um", "dois", "três", "quatro", "cinco", "seis", "sete", "oito", "nove"];
+    const dezenas = ["", "", "vinte", "trinta", "quarenta", "cinquenta", "sessenta", "setenta", "oitenta", "noventa"];
+    const especiais = ["dez", "onze", "doze", "treze", "quatorze", "quinze", "dezesseis", "dezessete", "dezoito", "dezenove"];
+    const centenas = ["", "cento", "duzentos", "trezentos", "quatrocentos", "quinhentos", "seiscentos", "setecentos", "oitocentos", "novecentos"];
+
+    function extenso(num) {
+      if (num === 0) return "";
+      if (num < 10) return unidades[num];
+      if (num < 20) return especiais[num - 10];
+      if (num < 100) {
+        const dez = Math.floor(num / 10);
+        const uni = num % 10;
+        return dezenas[dez] + (uni > 0 ? " e " + unidades[uni] : "");
+      }
+      if (num < 1000) {
+        const cent = Math.floor(num / 100);
+        const resto = num % 100;
+        if (cent === 1 && resto === 0) return "cem";
+        return centenas[cent] + (resto > 0 ? " e " + extenso(resto) : "");
+      }
+      return "";
+    }
+
+    const inteiro = Math.floor(n);
+    const centavos = Math.round((n - inteiro) * 100);
+
+    let extensoInteiro = extenso(inteiro);
+    let extensoCentavos = extenso(centavos);
+
+    let texto = "";
+
+    if (inteiro > 0) {
+      texto += extensoInteiro + (inteiro === 1 ? " real" : " reais");
+    }
+
+    if (inteiro > 0 && centavos > 0) {
+      texto += " e ";
+    }
+
+    if (centavos > 0) {
+      texto += extensoCentavos + (centavos === 1 ? " centavo" : " centavos");
+    }
+
+    return texto.charAt(0).toUpperCase() + texto.slice(1);
+  }
+
+  function mesPorExtenso(mes) {
+    const meses = [
+      "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+      "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"
+    ];
+    return meses[mes];
+  }
+
+  function gerarRecibo() {
+    const valorInput = document.getElementById("valor").value;
+    const valorNum = parseFloat(valorInput);
+    
+    if (isNaN(valorNum) || valorNum <= 0) {
+      alert("Por favor, insira um valor válido.");
+      return;
+    }
+    
+    const valorFormatado = valorNum.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    const valorExtenso = numeroPorExtenso(valorNum);
+
+    const pagador = document.getElementById("pagador").value;
+    const referente = document.getElementById("referente").value;
+    const dataInput = document.getElementById("data").value;
+
+    const [ano, mes, dia] = dataInput.split("-");
+    const data = new Date(ano, mes - 1, dia);
+
+    const cidade = "Itapetininga"; // Cidade fixa conforme modelo
+    const dataFormatada = `${cidade}, ${parseInt(dia)} de ${mesPorExtenso(data.getMonth())} de ${ano}`;
+
+    document.getElementById("valorFormatado").innerText = valorFormatado;
+
+    document.getElementById("reciboTexto").innerHTML = `
+      Recebi(emos) de <strong>${pagador}</strong>, a importância de <strong>${valorFormatado} (${valorExtenso})</strong>,
+      referente à <strong>${referente}</strong>.
+      <br><br>
+      Para maior clareza, firmo(amos) o presente recibo, que comprova o recebimento integral do valor mencionado, concedendo
+      <strong>quitação plena, geral e irrevogável</strong> pela quantia recebida.
+    `;
+
+    document.getElementById("reciboData").innerText = dataFormatada;
+
+    // Lógica simples para número do recibo (pode ser melhorada com localStorage)
+    const numeroRecibo = Math.floor(Math.random() * 100) + 1;
+    document.getElementById("reciboNumero").innerText = `Recibo nº ${String(numeroRecibo).padStart(2, "0")}`;
+
+    document.getElementById("reciboContainer").style.display = "block";
+  }
+
+  function limparTudo() {
+    document.getElementById("valor").value = "";
+    document.getElementById("pagador").selectedIndex = 0;
+    document.getElementById("referente").selectedIndex = 0;
+    document.getElementById("data").value = "";
+    document.getElementById("formaPagamento").selectedIndex = 0;
+    document.getElementById("reciboContainer").style.display = "none";
+  }
+</script>
+
+</body>
+</html>
