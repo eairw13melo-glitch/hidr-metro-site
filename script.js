@@ -564,6 +564,70 @@ function editarCampo(blocoIndex, aptIndex, campo, valor) {
 }
 
 // ============== LÓGICA SABESP ==============
+
+// Função para alternar a visibilidade da calculadora
+function toggleCalculadora() {
+  const calc = document.querySelector('.calculator-container');
+  const result = document.getElementById('textoExplicativo');
+  const whatsapp = document.getElementById('whatsappLink').parentElement;
+  
+  // O campo da Conta Sabesp agora está no formulário de boleto
+  const contaSabespInput = document.getElementById('contaSabesp');
+  const contaSabespLabel = contaSabespInput ? contaSabespInput.previousElementSibling : null;
+
+  const isVisible = calc.style.display !== 'none';
+
+  calc.style.display = isVisible ? 'none' : 'block';
+  result.style.display = isVisible ? 'none' : 'block';
+  whatsapp.style.display = isVisible ? 'none' : 'block';
+  
+  // Ocultar/Exibir o campo da Conta Sabesp também
+  if (contaSabespInput) {
+    contaSabespInput.style.display = isVisible ? 'none' : 'block';
+  }
+  if (contaSabespLabel) {
+    contaSabespLabel.style.display = isVisible ? 'none' : 'block';
+  }
+
+  localStorage.setItem('calculadoraVisivel', isVisible ? 'false' : 'true');
+}
+
+// Inicializa a visibilidade da calculadora ao carregar a página
+document.addEventListener('DOMContentLoaded', () => {
+  const isVisible = localStorage.getItem('calculadoraVisivel');
+  const calc = document.querySelector('.calculator-container');
+  const result = document.getElementById('textoExplicativo');
+  const whatsapp = document.getElementById('whatsappLink').parentElement;
+  
+  // O campo da Conta Sabesp agora está no formulário de boleto
+  const contaSabespInput = document.getElementById('contaSabesp');
+  const contaSabespLabel = contaSabespInput ? contaSabespInput.previousElementSibling : null;
+
+  if (isVisible === 'false') {
+    calc.style.display = 'none';
+    result.style.display = 'none';
+    whatsapp.style.display = 'none';
+    
+    if (contaSabespInput) {
+      contaSabespInput.style.display = 'none';
+    }
+    if (contaSabespLabel) {
+      contaSabespLabel.style.display = 'none';
+    }
+  } else {
+    // Garante que estejam visíveis por padrão se não houver configuração
+    calc.style.display = 'block';
+    result.style.display = 'block';
+    whatsapp.style.display = 'block';
+    
+    if (contaSabespInput) {
+      contaSabespInput.style.display = 'block';
+    }
+    if (contaSabespLabel) {
+      contaSabespLabel.style.display = 'block';
+    }
+  }
+});
 	function salvarContaSabesp() {
 	  const id = Number(new URLSearchParams(location.search).get("id"));
 	  const blocos = carregarBlocos();
