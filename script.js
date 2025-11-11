@@ -241,7 +241,13 @@ function renderizarBlocoIndividual() {
 
   container.innerHTML = `
     <div class="bloco">
-      <h2>${bloco.nome}</h2>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>${bloco.nome}</h2>
+        <div class="acoes">
+          <button type="button" onclick="editarInformacoesBloco(${id})">✏️ Editar</button>
+          <button type="button" onclick="gerarExplicacaoWhatsApp(${id})" style="background-color: #25D366;">💬 Explicar Cálculo</button>
+        </div>
+      </div>
       <p><strong>Endereço:</strong> ${bloco.endereco || "-"}</p>
       <p><strong>Síndico:</strong> ${bloco.sindico || "-"}</p>
 
@@ -283,8 +289,7 @@ function preencherTarifaForm(bloco) {
   document.getElementById("tarifa-21-50-bloco").value = t.faixa_21_50;
 }
 
-function editarInformacoesBloco() {
-  const id = Number(new URLSearchParams(location.search).get("id"));
+function editarInformacoesBloco(id) {
   const blocos = carregarBlocos();
   const bloco = blocos[id];
   if (!bloco) { alert("Bloco não encontrado."); return; }
@@ -863,8 +868,7 @@ function criarBoletoHalf(apt, vencLabel) {
 }
 
 // botão Atualizar (nos controles da página de boletos)
-function gerarExplicacaoWhatsApp() {
-  const id = Number(new URLSearchParams(location.search).get("id"));
+function gerarExplicacaoWhatsApp(id) {
   const blocos = carregarBlocos();
   const bloco = blocos[id];
   if (!bloco) { alert("Bloco não encontrado."); return; }
