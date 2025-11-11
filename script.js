@@ -279,12 +279,6 @@ function renderizarBlocoIndividual() {
 	  });
 	  salvarBlocos(blocos);
 	
-	  // Atualiza o campo da conta Sabesp na UI
-	  const contaSabespInput = document.getElementById("contaSabesp");
-	  if (contaSabespInput) {
-	    contaSabespInput.value = bloco.contaSabesp.toFixed(2);
-	  }
-	
 	  // Chama a função de cálculo principal após a renderização
 	  calcularRateioSabesp(id);
 
@@ -314,8 +308,10 @@ function renderizarBlocoIndividual() {
         <button type="button" onclick="salvarTarifaDoBloco(${id})">💾 Salvar Tarifas deste Bloco</button>
       </form>
 
-      <h3 style="margin-top:10px;">Configurações de Boleto 🧾</h3>
-      <form class="boleto-form" onsubmit="return false;">
+	      <h3 style="margin-top:10px;">Configurações de Boleto 🧾</h3>
+	      <form class="boleto-form" onsubmit="return false;">
+	        <label for="contaSabesp">Valor da Conta Sabesp (R$):</label>
+	        <input type="number" id="contaSabesp" step="0.01" placeholder="Ex: 1500.00" class="input-curto" onchange="salvarContaSabesp();" />
         <label for="boleto-servico-leitura">Serviço de Leitura (R$):</label>
         <input type="number" step="0.01" id="boleto-servico-leitura" class="input-curto">
 
@@ -354,6 +350,12 @@ function renderizarBlocoIndividual() {
 
 function preencherBoletoConfigForm(bloco) {
   const b = bloco.boletoConfig;
+  // Novo campo Conta Sabesp
+  const contaSabespInput = document.getElementById("contaSabesp");
+  if (contaSabespInput) {
+    contaSabespInput.value = bloco.contaSabesp.toFixed(2);
+  }
+  
   document.getElementById("boleto-servico-leitura").value = b.servico_leitura_rs;
   document.getElementById("boleto-condominio").value = b.condominio_rs;
   document.getElementById("boleto-multas-outros").value = b.multas_outros_rs;
