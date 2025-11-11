@@ -610,6 +610,15 @@ input.input-curto {
   z-index: 1;
 }
 
+.cut-line.no-scissor span {
+  background: transparent;
+  padding: 0;
+}
+
+.cut-line.no-scissor {
+  border-top: 2px dashed #999;
+}
+
 @media print {
   .boleto-capa,
   .boleto-contracapa {
@@ -648,6 +657,15 @@ input.input-curto {
   padding: 0 10px;
   position: relative;
   z-index: 1;
+}
+
+.cut-line.no-scissor span {
+  background: transparent;
+  padding: 0;
+}
+
+.cut-line.no-scissor {
+  border-top: 2px dashed #999;
 }
 
 /* ======== Responsividade ======== */

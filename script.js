@@ -1044,14 +1044,15 @@ function renderizarBoletosPage() {
     const sheet = document.createElement('section');
     sheet.className = 'boleto-sheet';
     
-    // Linha de corte antes do primeiro boleto
+    // Linha de corte antes do primeiro boleto (sem tesoura)
     const cutTop = document.createElement('div');
-    cutTop.className = 'cut-line';
-    cutTop.innerHTML = `<span>— — — — — — — — — — — — — —  ✂  — — — — — — — — — — — — — —</span>`;
+    cutTop.className = 'cut-line no-scissor';
+    cutTop.innerHTML = `<span>— — — — — — — — — — — — — — — — — — — — — — — — — — — — — — —</span>`;
     sheet.appendChild(cutTop);
     
     sheet.appendChild(criarBoletoHalf(dupla[0], vencLabel, mesReferenciaLabel, bloco));
     
+    // Linha de corte entre os boletos (com tesoura)
     const cut = document.createElement('div');
     cut.className = 'cut-line';
     cut.innerHTML = `<span>— — — — — — — — — — — — — —  ✂  — — — — — — — — — — — — — —</span>`;
@@ -1059,10 +1060,10 @@ function renderizarBoletosPage() {
     
     sheet.appendChild(criarBoletoHalf(dupla[1], vencLabel, mesReferenciaLabel, bloco));
     
-    // Linha de corte após o segundo boleto
+    // Linha de corte após o segundo boleto (sem tesoura)
     const cutBottom = document.createElement('div');
-    cutBottom.className = 'cut-line';
-    cutBottom.innerHTML = `<span>— — — — — — — — — — — — — —  ✂  — — — — — — — — — — — — — —</span>`;
+    cutBottom.className = 'cut-line no-scissor';
+    cutBottom.innerHTML = `<span>— — — — — — — — — — — — — — — — — — — — — — — — — — — — — — —</span>`;
     sheet.appendChild(cutBottom);
     
     root.appendChild(sheet);
