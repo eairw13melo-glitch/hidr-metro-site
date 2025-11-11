@@ -107,15 +107,16 @@
       <button type="button" class="btn-danger" onclick="resetarBlocoPerguntar()">🗑️ Resetar Bloco</button>
       <button type="button" onclick="(function(){ const id=new URLSearchParams(location.search).get('id'); location.href='boletos.html?id='+encodeURIComponent(id||'0'); })()">🧾 Boletos (imprimir)</button>
     </div>
-  </div>
-
- <main id="bloco-detalhes" class="conteudo">
-    <div class="calculator-container">
+	      <div class="calculator-container">
 	      <div class="input-group">
 	        <label for="contaSabesp">Valor da Conta Sabesp (R$):</label>
 	        <input type="number" id="contaSabesp" step="0.01" placeholder="Ex: 1500.00" onchange="salvarContaSabesp();" />
 	      </div>
-      <h2>Calculadora de Conta de Água</h2>
+     		<h2>Calculadora de Conta de Água</h2>
+  </div>
+
+ <main id="bloco-detalhes" class="conteudo">
+
       <p>Preencha os campos abaixo para calcular o valor da sua conta.</p>
 
       <div class="input-group">
