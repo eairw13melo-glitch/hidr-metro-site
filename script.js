@@ -162,6 +162,7 @@ function criarBloco() {
     tarifaConfig: { ...DEFAULT_TARIFA }, // 👈 tarifas independentes por bloco
     // Novos campos para boletos (padrão do bloco)
     boletoConfig: {
+      conta_sabesp_rs: 0.00, // Novo campo
       servico_leitura_rs: 6.25, // Valor padrão do modelo
       condominio_rs: 50.00, // Valor padrão do modelo
       multas_outros_rs: 0.00,
@@ -246,8 +247,12 @@ function renderizarBlocoIndividual() {
   if (!bloco.leitura_atual) bloco.leitura_atual = [];
   if (!bloco.historico) bloco.historico = {};
   if (!bloco.tarifaConfig) bloco.tarifaConfig = { ...DEFAULT_TARIFA };
+
+  // Aplica o rateio no carregamento da página
+  bloco.leitura_atual = calcularRateioSabesp(bloco);
   if (!bloco.boletoConfig) {
     bloco.boletoConfig = {
+      conta_sabesp_rs: 0.00, // Novo campo
       servico_leitura_rs: 6.25,
       condominio_rs: 50.00,
       multas_outros_rs: 0.00,
@@ -289,6 +294,10 @@ function renderizarBlocoIndividual() {
 
       <h3 style="margin-top:10px;">Configurações de Boleto 🧾</h3>
       <form class="boleto-form" onsubmit="return false;">
+        <label for="boleto-conta-sabesp">Conta da Sabesp (R$):</label>
+        <input type="number" step="0.01" id="boleto-conta-sabesp" class="input-curto">
+        <p style="font-size:0.8em; color:#666; margin-top:-10px;">*O valor da conta da Sabesp será usado para rateio.</p>
+
         <label for="boleto-servico-leitura">Serviço de Leitura (R$):</label>
         <input type="number" step="0.01" id="boleto-servico-leitura" class="input-curto">
 
@@ -325,6 +334,7 @@ function renderizarBlocoIndividual() {
 
 function preencherBoletoConfigForm(bloco) {
   const b = bloco.boletoConfig;
+  document.getElementById("boleto-conta-sabesp").value = b.conta_sabesp_rs || 0;
   document.getElementById("boleto-servico-leitura").value = b.servico_leitura_rs;
   document.getElementById("boleto-condominio").value = b.condominio_rs;
   document.getElementById("boleto-multas-outros").value = b.multas_outros_rs;
@@ -336,11 +346,15 @@ function salvarBoletoConfigDoBloco(blocoIndex) {
   const bloco = blocos[blocoIndex];
 
   bloco.boletoConfig = {
+    conta_sabesp_rs: Number(document.getElementById("boleto-conta-sabesp").value) || 0,
     servico_leitura_rs: Number(document.getElementById("boleto-servico-leitura").value) || 0,
     condominio_rs: Number(document.getElementById("boleto-condominio").value) || 0,
     multas_outros_rs: Number(document.getElementById("boleto-multas-outros").value) || 0,
     obs_geral: document.getElementById("boleto-obs-geral").value
   };
+
+  // Recalcula todos os valores do bloco devido ao rateio
+  bloco.leitura_atual = calcularRateioSabesp(bloco);
 
   salvarBlocos(blocos);
   showToast("Configurações de boleto salvas!");
@@ -394,12 +408,8 @@ function salvarTarifaDoBloco(blocoIndex) {
     faixa_21_50: document.getElementById("tarifa-21-50-bloco").value
   });
 
-  // Recalcula valores atuais com a nova tarifa
-  const tarifa = getTarifa(bloco);
-  bloco.leitura_atual = bloco.leitura_atual.map(apt => {
-    apt.total_rs = calcularValorEscalonado(apt.total_m3, tarifa).toFixed(2);
-    return apt;
-  });
+  // Recalcula todos os valores do bloco devido ao rateio
+  bloco.leitura_atual = calcularRateioSabesp(bloco);
 
   salvarBlocos(blocos);
   alert("Tarifas deste bloco salvas!");
@@ -630,6 +640,10 @@ function salvarLeituraDoMes(blocoIndex) {
   }
 
   // 3) Prepara próxima rodada
+  // Antes de preparar a próxima rodada, precisamos garantir que o valor final (total_rs) esteja calculado
+  // com o rateio, para que ele seja salvo no histórico.
+  bloco.leitura_atual = calcularRateioSabesp(bloco);
+
   bloco.leitura_atual = (bloco.leitura_atual || []).map(apt => ({
     numero: apt.numero,
     responsavel: apt.responsavel,
@@ -825,26 +839,60 @@ function popularOrigemDadosBoletos(selectEl, bloco) {
   });
 }
 function chunk(arr, size) { const out=[]; for (let i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size)); return out; }
+
+function renderizarCapas(bloco, capaFrontal, capaVerso) {
+  const contaSabesp = Number(bloco.boletoConfig.conta_sabesp_rs) || 0;
+
+  capaFrontal.innerHTML = `
+    <div id="capa-frontal-content">
+      <img src="logo.png" alt="Logo do Bloco">
+      <h1>Leitura de Hidrômetro</h1>
+      <p><strong>Bloco:</strong> ${escapeHtml(bloco.nome)}</p>
+      <p><strong>Endereço:</strong> ${escapeHtml(bloco.endereco || "-")}</p>
+      <p><strong>Síndico:</strong> ${escapeHtml(bloco.sindico || "-")}</p>
+      <div class="sabesp-total">
+        Conta da Sabesp: ${brl(contaSabesp)}
+      </div>
+    </div>
+  `;
+
+  capaVerso.innerHTML = `
+    <div style="height:100%; display:flex; align-items:center; justify-content:center;">
+      <p style="font-size:1.5rem; color:#ccc;">Verso em Branco</p>
+    </div>
+  `;
+}
 function brl(n) { return (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
 function escapeHtml(str){return String(str).replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));}
 
 function renderizarBoletosPage() {
-  const root = document.getElementById('boletos-root');
-  if (!root) return;
+  const boletosContainer = document.getElementById('boletos-container');
+  const capaFrontal = document.getElementById('capa-frontal');
+  const capaVerso = document.getElementById('capa-verso');
+  if (!boletosContainer || !capaFrontal || !capaVerso) return;
 
   const idParam = new URLSearchParams(location.search).get("id");
   const id = Number(idParam);
   if (Number.isNaN(id)) {
-    root.innerHTML = `<div style="padding:20px">ID do bloco ausente na URL. Abra os boletos pelo botão dentro do bloco.</div>`;
+    boletosContainer.innerHTML = `<div style="padding:20px">ID do bloco ausente na URL. Abra os boletos pelo botão dentro do bloco.</div>`;
     return;
   }
 
   const blocos = carregarBlocos();
   const bloco = blocos[id];
   if (!bloco) {
-    root.innerHTML = `<div style="padding:20px">Bloco (id=${escapeHtml(idParam)}) não encontrado.</div>`;
+    boletosContainer.innerHTML = `<div style="padding:20px">Bloco (id=${escapeHtml(idParam)}) não encontrado.</div>`;
     return;
   }
+
+  // 1. Renderizar Capas
+  renderizarCapas(bloco, capaFrontal, capaVerso);
+
+  // 2. Renderizar Boletos
+  // controles
+  const selOrigem = document.getElementById('origem-dados');
+  const inpVenc = document.getElementById('vencimento');
+  const inpFiltro = document.getElementById('filtro-responsavel');
 
   // controles
   const selOrigem = document.getElementById('origem-dados');
@@ -896,17 +944,21 @@ function renderizarBoletosPage() {
   grupos.forEach(dupla => {
     const sheet = document.createElement('section');
     sheet.className = 'boleto-sheet';
-    sheet.appendChild(criarBoletoHalf(dupla[0], vencLabel, mesReferenciaLabel, bloco));
+    // Linha de corte superior (para o primeiro boleto da página)
+    sheet.appendChild(document.createElement('div')).className = 'cut-line-top';
+    sheet.appendChild(criarBoletoHalf(dupla[0], vencLabel, mesReferenciaLabel, bloco, true)); // Boleto Superior (Recebido Por)
     const cut = document.createElement('div');
     cut.className = 'cut-line';
     cut.innerHTML = `<span>— — — — — — — — — — — — — —  ✂  — — — — — — — — — — — — — —</span>`;
     sheet.appendChild(cut);
-    sheet.appendChild(criarBoletoHalf(dupla[1], vencLabel, mesReferenciaLabel, bloco));
-    root.appendChild(sheet);
+    sheet.appendChild(criarBoletoHalf(dupla[1], vencLabel, mesReferenciaLabel, bloco, false)); // Boleto Inferior (Síndico)
+    // Linha de corte inferior (para o último boleto da página)
+    sheet.appendChild(document.createElement('div')).className = 'cut-line-bottom';
+    boletosContainer.appendChild(sheet);
   });
 }
 
-function criarBoletoHalf(apt, vencLabel, mesReferenciaLabel, bloco) {
+function criarBoletoHalf(apt, vencLabel, mesReferenciaLabel, bloco, isSuperior) {
   const half = document.createElement('div');
   half.className = 'boleto-half';
 
@@ -927,7 +979,11 @@ function criarBoletoHalf(apt, vencLabel, mesReferenciaLabel, bloco) {
       <div class="boleto-lines-placeholder"></div>
       <div class="boleto-total-placeholder"></div>
       <div class="boleto-obs-placeholder"></div>
-      <div class="boleto-recebido-por">RECEBIDO POR:</div>
+      <div class="boleto-recebido-por">
+        ${isSuperior ? 'RECEBIDO POR:' : `SÍNDICO: ${escapeHtml(bloco.sindico || "-")}`}
+        <div class="assinatura-area">Assinatura</div>
+        <div class="data-area">Data</div>
+      </div>
     `;
     return half;
   }

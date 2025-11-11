@@ -195,6 +195,7 @@ input:focus, select:focus {
   grid-template-rows: auto auto auto 1fr auto auto;
   gap: 0;
   font-size: 0.85rem;
+  height: 45vh; /* Altura fixa para caber 2 por página */
 }
 
 .boleto-header-row {
@@ -280,14 +281,45 @@ input:focus, select:focus {
   margin-top: 10px;
   padding-top: 5px;
   font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  height: 40px; /* Espaço para assinatura e data */
+}
+
+.boleto-recebido-por .assinatura-area {
+  border-bottom: 1px solid #000;
+  width: 60%;
+  text-align: center;
+}
+
+.boleto-recebido-por .data-area {
+  border-bottom: 1px solid #000;
+  width: 30%;
+  text-align: center;
 }
 
 .cut-line {
   text-align: center;
   color: #999;
-  margin: 8px 0;
+  margin: 0;
   font-family: monospace;
+  grid-column: 1 / 3;
+  width: 100%;
+  border-top: 1px dashed #999;
+  border-bottom: 1px dashed #999;
+  padding: 2px 0;
 }
+
+.cut-line-top, .cut-line-bottom {
+  height: 0;
+  border-top: 1px solid #000;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+
 
 @media print {
   .boleto-sheet {
@@ -298,15 +330,62 @@ input:focus, select:focus {
   }
   .boleto-half {
     border: 1px solid #000 !important;
+    height: 45vh;
+  }
+  .cut-line-top, .cut-line-bottom {
+    display: block;
+  }
+  .capa-page {
+    page-break-after: always;
+    height: 100vh;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    display: block !important;
   }
 }
 
-.cut-line {
+.capa-page {
+  display: none; /* Esconde as capas na visualização normal */
+  padding: 50px;
   text-align: center;
-  color: #999;
-  margin: 8px 0;
-  font-family: monospace;
 }
+
+#capa-frontal-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+#capa-frontal-content img {
+  max-width: 200px;
+  margin-bottom: 30px;
+}
+
+#capa-frontal-content h1 {
+  font-size: 2.5rem;
+  color: var(--azul-escuro);
+  margin-bottom: 10px;
+}
+
+#capa-frontal-content p {
+  font-size: 1.2rem;
+  margin: 5px 0;
+}
+
+#capa-frontal-content .sabesp-total {
+  margin-top: 30px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--vermelho);
+  border: 2px solid var(--vermelho);
+  padding: 10px 20px;
+  border-radius: var(--radius);
+}
+
+
 
 /* ======== Responsividade ======== */
 @media (max-width: 768px) {
