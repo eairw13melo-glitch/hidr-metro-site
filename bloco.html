@@ -99,9 +99,8 @@
   </script>
 
   <div class="toolbar">
-	    <button class="voltar" aria-label="Voltar para o painel" onclick="window.location.href='dashboard.html'">🔙 Voltar</button>
-	    <div class="acoes">
-	      <button type="button" onclick="toggleCalculadora()">🧮 Calculadora</button>
+    <button class="voltar" aria-label="Voltar para o painel" onclick="window.location.href='dashboard.html'">🔙 Voltar</button>
+    <div class="acoes">
       <button type="button" onclick="exportarLeituraAtual()">📤 Exportar Leitura Atual</button>
       <input type="file" id="importar-leitura-arquivo" accept=".xlsx" style="display:none" onchange="importarLeituraAtual(event)" />
       <button type="button" onclick="document.getElementById('importar-leitura-arquivo').click()">📥 Importar Leitura Atual (XLSX)</button>
@@ -109,8 +108,6 @@
       <button type="button" onclick="(function(){ const id=new URLSearchParams(location.search).get('id'); location.href='boletos.html?id='+encodeURIComponent(id||'0'); })()">🧾 Boletos (imprimir)</button>
     </div>
   </div>
-
- <main id="bloco-detalhes" class="conteudo">
     <div class="calculator-container">
 	      <h2>Calculadora de Conta de Água</h2>
       <p>Preencha os campos abaixo para calcular o valor da sua conta.</p>
@@ -135,6 +132,8 @@
         <input type="text" id="valorTotal" readonly />
       </div>
     </div>
+ <main id="bloco-detalhes" class="conteudo">
+
 
     <div id="textoExplicativo" class="result-box"></div>
 
