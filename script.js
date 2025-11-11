@@ -283,6 +283,37 @@ function preencherTarifaForm(bloco) {
   document.getElementById("tarifa-21-50-bloco").value = t.faixa_21_50;
 }
 
+function editarInformacoesBloco() {
+  const id = Number(new URLSearchParams(location.search).get("id"));
+  const blocos = carregarBlocos();
+  const bloco = blocos[id];
+  if (!bloco) { alert("Bloco não encontrado."); return; }
+
+  const novoNome = prompt("Novo nome do bloco:", bloco.nome);
+  if (novoNome === null) return; // Cancelado
+
+  const novoEndereco = prompt("Novo endereço do bloco:", bloco.endereco || "");
+  if (novoEndereco === null) return; // Cancelado
+
+  const novoSindico = prompt("Novo síndico:", bloco.sindico || "");
+  if (novoSindico === null) return; // Cancelado
+
+  // Verifica se o novo nome já existe em outro bloco
+  const nomeExiste = blocos.some((b, index) => index !== id && b.nome.toLowerCase() === novoNome.toLowerCase());
+  if (nomeExiste) {
+    alert("Já existe um bloco com esse nome.");
+    return;
+  }
+
+  bloco.nome = novoNome;
+  bloco.endereco = novoEndereco;
+  bloco.sindico = novoSindico;
+
+  salvarBlocos(blocos);
+  renderizarBlocoIndividual();
+  showToast("Informações do bloco atualizadas!");
+}
+
 function salvarTarifaDoBloco(blocoIndex) {
   const blocos = carregarBlocos();
   const bloco = blocos[blocoIndex];
@@ -351,9 +382,14 @@ function gerarHistorico(bloco) {
   const meses = Object.keys(historico).sort().reverse();
   if (meses.length === 0) return `<div class="bloco"><p>Nenhuma leitura registrada ainda.</p></div>`;
 
+  const id = Number(new URLSearchParams(location.search).get("id"));
+
   return meses.map(mes => `
     <div class="bloco">
-      <h4>📅 ${formatarMesLabel(mes)}</h4>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h4>📅 ${formatarMesLabel(mes)}</h4>
+        <button class="btn-danger-outline" onclick="excluirHistorico(${id}, '${mes}')">🗑️ Excluir Histórico</button>
+      </div>
       <table>
         <thead>
           <tr>
@@ -472,6 +508,20 @@ function formatarMesLabel(mes) {
   return date.toLocaleString("pt-BR", { month: "long", year: "numeric" });
 }
 
+function excluirHistorico(blocoIndex, mesKey) {
+  const blocos = carregarBlocos();
+  const bloco = blocos[blocoIndex];
+  if (!bloco) { alert("Bloco não encontrado."); return; }
+
+  const mesLabel = formatarMesLabel(mesKey);
+  if (!confirm(`Tem certeza que deseja excluir o histórico de leitura do mês ${mesLabel} do bloco "${bloco.nome}"?`)) return;
+
+  delete bloco.historico[mesKey];
+  salvarBlocos(blocos);
+  renderizarBlocoIndividual();
+  showToast(`Histórico de ${mesLabel} excluído com sucesso!`);
+}
+
 function salvarLeituraDoMes(blocoIndex) {
   const blocos = carregarBlocos();
   const bloco = blocos[blocoIndex];
@@ -548,6 +598,21 @@ function exportarParaExcel(dados, nomeBloco, mes) {
   XLSX.utils.book_append_sheet(workbook, worksheet, "Leitura");
   const nomeArquivo = `Leitura_${nomeBloco}_${mes}.xlsx`.replace(/\s+/g, "_");
   XLSX.writeFile(workbook, nomeArquivo);
+}
+
+function gerarTemplateImportacao() {
+  checarXLSX(() => {
+    const worksheetData = [
+      ["Hidrômetro Nº","Responsável","Leitura Anterior","Leitura Atual","Observações"],
+      ["101-A", "João da Silva", 0, 0, "Exemplo de preenchimento"],
+      ["102-B", "Maria de Souza", 10, 15, ""]
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Modelo");
+    XLSX.writeFile(wb, "Modelo_Importacao_Leitura.xlsx");
+  });
 }
 
 function exportarLeituraAtual() {
@@ -798,6 +863,51 @@ function criarBoletoHalf(apt, vencLabel) {
 }
 
 // botão Atualizar (nos controles da página de boletos)
+function gerarExplicacaoWhatsApp() {
+  const id = Number(new URLSearchParams(location.search).get("id"));
+  const blocos = carregarBlocos();
+  const bloco = blocos[id];
+  if (!bloco) { alert("Bloco não encontrado."); return; }
+
+  const tarifa = getTarifa(bloco);
+  const { minimo, faixa_11_20, faixa_21_50 } = tarifa;
+
+  let texto = `*Explicação do Cálculo da Conta de Água - Bloco ${bloco.nome}*\n\n`;
+  texto += `O cálculo da conta de água segue uma tabela escalonada, baseada no consumo em metros cúbicos (m³).\n\n`;
+
+  texto += `*1. Consumo Mínimo (até 10 m³):*\n`;
+  texto += `  - Para um consumo de até 10 m³, o valor fixo a ser pago é de *R$ ${minimo.toFixed(2).replace('.', ',')}*.\n\n`;
+
+  texto += `*2. Faixa Intermediária (de 11 m³ a 20 m³):*\n`;
+  texto += `  - Se o consumo ultrapassar 10 m³, cada m³ extra (até o limite de 20 m³) é cobrado a *R$ ${faixa_11_20.toFixed(2).replace('.', ',')}*.\n`;
+  texto += `  - *Fórmula:* Valor Mínimo + (m³ consumidos acima de 10) * R$ ${faixa_11_20.toFixed(2).replace('.', ',')}\n\n`;
+
+  texto += `*3. Faixa Superior (acima de 20 m³):*\n`;
+  texto += `  - Se o consumo ultrapassar 20 m³, cada m³ extra (acima de 20 m³) é cobrado a *R$ ${faixa_21_50.toFixed(2).replace('.', ',')}*.\n`;
+  texto += `  - *Fórmula:* Valor Mínimo + (10 * R$ ${faixa_11_20.toFixed(2).replace('.', ',')}) + (m³ consumidos acima de 20) * R$ ${faixa_21_50.toFixed(2).replace('.', ',')}\n\n`;
+
+  texto += `*Exemplo de Cálculo (Consumo de 25 m³):*\n`;
+  texto += `  - *1ª Faixa (0 a 10 m³):* R$ ${minimo.toFixed(2).replace('.', ',')}\n`;
+  texto += `  - *2ª Faixa (11 a 20 m³):* 10 m³ * R$ ${faixa_11_20.toFixed(2).replace('.', ',')} = R$ ${(10 * faixa_11_20).toFixed(2).replace('.', ',')}\n`;
+  const excedente20 = 25 - 20;
+  const valorExcedente20 = excedente20 * faixa_21_50;
+  texto += `  - *3ª Faixa (acima de 20 m³):* ${excedente20} m³ * R$ ${faixa_21_50.toFixed(2).replace('.', ',')} = R$ ${valorExcedente20.toFixed(2).replace('.', ',')}\n`;
+  const totalExemplo = minimo + (10 * faixa_11_20) + valorExcedente20;
+  texto += `  - *Total:* R$ ${totalExemplo.toFixed(2).replace('.', ',')}\n\n`;
+
+  texto += `*Observação:* Estes valores são baseados nas tarifas configuradas para o seu bloco.`;
+
+  // Copia o texto para a área de transferência e abre o WhatsApp
+  navigator.clipboard.writeText(texto).then(() => {
+    showToast("Texto copiado! Abrindo WhatsApp...");
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(texto)}`;
+    window.open(whatsappUrl, '_blank');
+  }).catch(err => {
+    console.error('Erro ao copiar texto: ', err);
+    alert("Erro ao copiar texto. Tente novamente.");
+  });
+}
+
 function atualizarBoletos(){ 
   try { renderizarBoletosPage(); } 
   catch(e){ console.error(e); alert("Erro ao gerar boletos. Veja o console para detalhes."); } 
