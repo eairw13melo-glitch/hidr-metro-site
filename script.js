@@ -200,7 +200,7 @@ function popularMesesRecibo() {
   const selectMes = document.getElementById('select-mes-recibo');
   if (!selectBloco || !selectMes) return;
 
-  const blocoIndex = selectBloco.value;
+  const blocoIndex = parseInt(selectBloco.value);
   selectMes.innerHTML = '<option value="">-- Selecione o Mês --</option>';
 
   if (blocoIndex === "") return;
@@ -307,13 +307,15 @@ function gerarRecibo(blocoIndex, mes) {
   }
   
   // Adiciona o valor da conta Sabesp (se houver)
-  const contaSabesp = parseFloat(bloco.contaSabesp);
+  // Garante que bloco.contaSabesp seja tratado como 0 se for null, undefined ou string vazia
+  const contaSabesp = parseFloat(bloco.contaSabesp || 0); 
   if (!isNaN(contaSabesp)) {
     valorTotal += contaSabesp;
   }
   
   // Se o valor total for 0 ou NaN, retorna um erro
   if (valorTotal <= 0 || isNaN(valorTotal)) {
+    console.error("Erro na Geração do Recibo. Valor Total Calculado:", valorTotal); // Adicionado para debug
     alert("Não foi possível calcular o valor total do recibo. Verifique os dados de leitura e a conta Sabesp para o mês selecionado.");
     fecharModalImpressaoRecibo();
     return;
@@ -362,15 +364,15 @@ function gerarReciboParaImpressao(event) {
   const selectBloco = document.getElementById('select-bloco-recibo');
   const selectMes = document.getElementById('select-mes-recibo');
   
-  const blocoIndex = selectBloco.value;
+  const blocoIndex = parseInt(selectBloco.value);
   const mes = selectMes.value;
   
-  if (blocoIndex === "" || mes === "") {
+  if (isNaN(blocoIndex) || mes === "") {
     alert("Por favor, selecione o Bloco e o Mês.");
     return;
   }
   
-  gerarRecibo(parseInt(blocoIndex), mes);
+  gerarRecibo(blocoIndex, mes);
 }
 
 function fecharModalVisualizacaoRecibo() {
