@@ -1122,7 +1122,7 @@ function renderizarBoletosPage() {
     // const cut = document.createElement('div');
     // cut.className = 'cut-line';
     // cut.innerHTML = `<span>— — — — — — — — — — — — — —  ✂  — — — — — — — — — — — — — —</span>`;
-    // sheet.appendChild(cut);
+    sheet.appendChild(cut);
     
     sheet.appendChild(criarBoletoHalf(dupla[1], vencLabel, mesReferenciaLabel, bloco));
     
