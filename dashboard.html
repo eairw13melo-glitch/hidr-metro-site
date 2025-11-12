@@ -90,22 +90,57 @@
     </div>
   </div>
 
-  <!-- Modal de Impressão de Recibo -->
-  <div id="modal-impressao-recibo" class="modal" style="display:none;">
-    <div class="modal-content">
-      <span class="close-button" onclick="fecharModalImpressaoRecibo()">&times;</span>
-      <h2>Imprimir Recibo por Bloco e Mês</h2>
-      <form id="form-impressao-recibo" onsubmit="imprimirReciboSelecionado(event)">
-        <label for="select-bloco-recibo">Selecione o Bloco:</label>
-        <select id="select-bloco-recibo" required onchange="popularMesesRecibo()"></select>
-        
-        <label for="select-mes-recibo">Selecione o Mês:</label>
-        <select id="select-mes-recibo" required></select>
-        
-        <button type="submit">Gerar Recibo para Impressão</button>
-      </form>
-    </div>
-  </div>
+	  <!-- Modal de Impressão de Recibo (Seleção) -->
+	  <div id="modal-impressao-recibo" class="modal" style="display:none;">
+	    <div class="modal-content">
+	      <span class="close-button" onclick="fecharModalImpressaoRecibo()">&times;</span>
+	      <h2>Imprimir Recibo por Bloco e Mês</h2>
+	      <form id="form-impressao-recibo" onsubmit="gerarReciboParaImpressao(event)">
+	        <label for="select-bloco-recibo">Selecione o Bloco:</label>
+	        <select id="select-bloco-recibo" required onchange="popularMesesRecibo()"></select>
+	        
+	        <label for="select-mes-recibo">Selecione o Mês:</label>
+	        <select id="select-mes-recibo" required></select>
+	        
+	        <button type="submit">Gerar Recibo para Impressão</button>
+	      </form>
+	    </div>
+	  </div>
+	
+	  <!-- Modal de Visualização/Impressão do Recibo -->
+	  <div id="modal-visualizacao-recibo" class="modal" style="display:none;">
+	    <div class="modal-content-recibo">
+	      <span class="close-button" onclick="fecharModalVisualizacaoRecibo()">&times;</span>
+	      
+	      <div class="recibo-container" id="reciboContainer">
+	        <div class="recibo-numero" id="reciboNumero">Recibo nº 01</div>
+	        <div class="recibo-logo">
+	          <img src="logorecibo.png" alt="Logo" />
+	        </div>
+	        <div class="recibo-header">
+	          <span>Recibo de Pagamento</span>
+	          <span id="valorFormatado">R$ 0,00</span>
+	        </div>
+	
+	        <div class="recibo-body" id="reciboTexto"></div>
+	
+	        <div class="assinatura">
+	          <div class="recibo-footer" id="reciboData"></div>
+	          <div class="assinatura-wrapper">
+	            <img src="assinatura.png" alt="Assinatura" class="assinatura-img" />
+	            <hr />
+	            <strong>RAFAEL WANDERLEY MELO</strong><br />
+	            <small>(15) 9 9793-9699</small>
+	          </div>
+	        </div>
+	      </div>
+	
+	      <div class="recibo-actions">
+	        <button class="print-button" onclick="imprimirRecibo()">Imprimir</button>
+	        <button class="export-pdf-button" onclick="exportarParaPDF()">Exportar para PDF</button>
+	      </div>
+	    </div>
+	  </div>
 
   <script src="script.js"></script>
 </body>

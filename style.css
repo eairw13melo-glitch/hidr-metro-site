@@ -236,6 +236,153 @@ input.input-curto {
   box-shadow: var(--shadow);
 }
 
+.modal-content-recibo {
+  background-color: #fefefe;
+  margin: 5% auto; /* 5% from the top and centered */
+  padding: 20px;
+  border: 1px solid #888;
+  width: 90%;
+  max-width: 750px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.recibo-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* Estilos do Recibo (copiados do recibo.html) */
+.recibo-container {
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 30px;
+  margin-top: 30px;
+  max-width: 700px;
+  background-color: #fff;
+  position: relative;
+  width: 100%;
+  text-align: center;
+}
+
+.recibo-numero {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.recibo-logo {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.recibo-logo img {
+  max-width: 150px;
+  height: auto;
+}
+
+.recibo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+  margin-bottom: 30px;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 10px;
+}
+
+.recibo-header span:last-child {
+  border: 1px solid #333;
+  padding: 5px 10px;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+}
+
+.recibo-body {
+  font-size: 16px;
+  line-height: 1.6;
+  text-align: justify;
+  margin-bottom: 30px;
+}
+
+.recibo-body strong {
+  font-weight: bold;
+}
+
+.assinatura {
+  margin-top: 60px;
+  text-align: right;
+  position: relative;
+  padding-right: 20px;
+}
+
+.assinatura-wrapper {
+  display: inline-block;
+  text-align: center;
+}
+
+.assinatura-wrapper hr {
+  margin-top: 20px;
+  margin-bottom: 5px;
+  border: none;
+  border-top: 1px solid #000;
+}
+
+.assinatura-img {
+  position: absolute;
+  top: -55px;
+  right: 50px; /* Ajuste para centralizar a assinatura */
+  width: 155px;
+  height: auto;
+  opacity: 0.95;
+}
+
+.recibo-footer {
+  text-align: right;
+  margin-top: 30px;
+  font-size: 15px;
+}
+
+.print-button, .export-pdf-button {
+  background-color: #2196F3;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 20px;
+  margin-left: 10px;
+}
+
+.export-pdf-button {
+  background-color: #007bff; /* Azul diferente para destaque */
+}
+
+@media print {
+  .modal-content-recibo {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    max-width: none;
+    box-shadow: none;
+  }
+  
+  .recibo-container {
+    border: none;
+    box-shadow: none;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .recibo-actions, .close-button {
+    display: none;
+  }
+}
+
 .modal-content h2 {
   color: var(--azul-escuro);
   margin-top: 0;

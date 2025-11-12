@@ -221,7 +221,120 @@ function popularMesesRecibo() {
   }
 }
 
-function imprimirReciboSelecionado(event) {
+// Função para converter número para extenso (copiada do recibo.html)
+function numeroPorExtenso(n) {
+  if (typeof n !== 'number') return '';
+  
+  const unidades = ["", "um", "dois", "três", "quatro", "cinco", "seis", "sete", "oito", "nove"];
+  const dezenas = ["", "", "vinte", "trinta", "quarenta", "cinquenta", "sessenta", "setenta", "oitenta", "noventa"];
+  const especiais = ["dez", "onze", "doze", "treze", "quatorze", "quinze", "dezesseis", "dezessete", "dezoito", "dezenove"];
+  const centenas = ["", "cento", "duzentos", "trezentos", "quatrocentos", "quinhentos", "seiscentos", "setecentos", "oitocentos", "novecentos"];
+
+  function extenso(num) {
+    if (num === 0) return "";
+    if (num < 10) return unidades[num];
+    if (num < 20) return especiais[num - 10];
+    if (num < 100) {
+      const dez = Math.floor(num / 10);
+      const uni = num % 10;
+      return dezenas[dez] + (uni > 0 ? " e " + unidades[uni] : "");
+    }
+    if (num < 1000) {
+      const cent = Math.floor(num / 100);
+      const resto = num % 100;
+      if (cent === 1 && resto === 0) return "cem";
+      return centenas[cent] + (resto > 0 ? " e " + extenso(resto) : "");
+    }
+    return "";
+  }
+
+  const inteiro = Math.floor(n);
+  const centavos = Math.round((n - inteiro) * 100);
+
+  let extensoInteiro = extenso(inteiro);
+  let extensoCentavos = extenso(centavos);
+
+  let texto = "";
+
+  if (inteiro > 0) {
+    texto += extensoInteiro + (inteiro === 1 ? " real" : " reais");
+  }
+
+  if (inteiro > 0 && centavos > 0) {
+    texto += " e ";
+  }
+
+  if (centavos > 0) {
+    texto += extensoCentavos + (centavos === 1 ? " centavo" : " centavos");
+  }
+
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
+// Função auxiliar para formatar o mês (copiada do recibo.html)
+function mesPorExtenso(mes) {
+  const meses = [
+    "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+    "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"
+  ];
+  return meses[mes];
+}
+
+// Função principal para gerar o recibo (adaptada do recibo.html)
+function gerarRecibo(blocoIndex, mes) {
+  const blocos = carregarBlocos();
+  const bloco = blocos[blocoIndex];
+  const dadosRecibo = bloco.historico[mes];
+  
+  // 1. Calcular o valor total do recibo (soma dos total_rs do histórico)
+  let valorTotal = 0;
+  dadosRecibo.leitura_atual.forEach(apt => {
+    valorTotal += parseFloat(apt.total_rs);
+  });
+  
+  // Adiciona o valor da conta Sabesp (se houver)
+  if (bloco.contaSabesp) {
+    valorTotal += parseFloat(bloco.contaSabesp);
+  }
+  
+  // 2. Formatar os dados
+  const valorFormatado = valorTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const valorExtenso = numeroPorExtenso(valorTotal);
+  
+  const pagador = bloco.nome;
+  const referente = `Leitura referente ao mês de ${formatarMesLabel(mes).toLowerCase()}`;
+  
+  // Data de hoje
+  const data = new Date();
+  const dia = data.getDate();
+  const mesAtual = data.getMonth();
+  const ano = data.getFullYear();
+  
+  const cidade = "Itapetininga"; // Cidade fixa conforme modelo
+  const dataFormatada = `${cidade}, ${dia} de ${mesPorExtenso(mesAtual)} de ${ano}`;
+  
+  // 3. Preencher o HTML do recibo
+  document.getElementById("reciboNumero").innerText = `Recibo nº ${String(blocoIndex + 1).padStart(2, "0")}`; // Usando o índice do bloco como número provisório
+  document.getElementById("valorFormatado").innerText = valorFormatado;
+  
+  document.getElementById("reciboTexto").innerHTML = `
+    Recebi(emos) de <strong>${pagador}</strong>, a importância de <strong>${valorFormatado} (${valorExtenso})</strong>,
+    referente à <strong>${referente}</strong>.
+    <br><br>
+    Para maior clareza, firmo(amos) o presente recibo, que comprova o recebimento integral do valor mencionado, concedendo
+    <strong>quitação plena, geral e irrevogável</strong> pela quantia recebida.
+  `;
+  
+  document.getElementById("reciboData").innerText = dataFormatada;
+  
+  // 4. Exibir o modal de visualização
+  document.getElementById('modal-visualizacao-recibo').style.display = 'block';
+  
+  // 5. Fechar o modal de seleção
+  fecharModalImpressaoRecibo();
+}
+
+function gerarReciboParaImpressao(event) {
   event.preventDefault();
   
   const selectBloco = document.getElementById('select-bloco-recibo');
@@ -235,12 +348,48 @@ function imprimirReciboSelecionado(event) {
     return;
   }
   
-  // Redireciona para a página de recibo com os parâmetros
-  // O recibo.html precisará ser adaptado para ler esses parâmetros e gerar o recibo
-  window.location.href = `recibo.html?bloco=${blocoIndex}&mes=${mes}`;
-  
-  fecharModalImpressaoRecibo();
+  gerarRecibo(parseInt(blocoIndex), mes);
 }
+
+function fecharModalVisualizacaoRecibo() {
+  document.getElementById('modal-visualizacao-recibo').style.display = 'none';
+}
+
+function imprimirRecibo() {
+  // Oculta os botões de ação antes de imprimir
+  const actions = document.querySelector('#modal-visualizacao-recibo .recibo-actions');
+  actions.style.display = 'none';
+  
+  // Imprime o conteúdo do modal
+  window.print();
+  
+  // Reexibe os botões após a impressão (com um pequeno delay para garantir que a impressão seja iniciada)
+  setTimeout(() => {
+    actions.style.display = 'flex';
+  }, 500);
+}
+
+function exportarParaPDF() {
+  const element = document.getElementById('reciboContainer');
+  const nomeRecibo = document.getElementById('reciboNumero').innerText.replace(' ', '_');
+  
+  // Configurações para o PDF
+  const opt = {
+    margin: 10,
+    filename: `${nomeRecibo}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  // Gera o PDF
+  html2pdf().set(opt).from(element).save();
+}
+
+// A função popularMesesRecibo já existe e será mantida.
+// A função popularBlocosRecibo já existe e será mantida.
+// A função abrirModalImpressaoRecibo já existe e será mantida.
+// A função fecharModalImpressaoRecibo já existe e será mantida.
 
 // Função auxiliar para formatar o mês (ex: "2025-11" -> "Novembro de 2025")
 function formatarMesLabel(mes) {
