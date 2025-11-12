@@ -102,7 +102,7 @@
   <div class="toolbar">
 	    <button class="voltar" aria-label="Voltar para o painel" onclick="window.location.href='dashboard.html'">🔙 Voltar</button>
 	    <div class="acoes">
-	      <button type="button" onclick="toggleCalculadora()">🧮 Calculadora</button>
+	      
       <button type="button" onclick="exportarLeituraAtual()">📤 Exportar Leitura Atual</button>
       <input type="file" id="importar-leitura-arquivo" accept=".xlsx" style="display:none" onchange="importarLeituraAtual(event)" />
       <button type="button" onclick="document.getElementById('importar-leitura-arquivo').click()">📥 Importar Leitura Atual (XLSX)</button>
@@ -112,39 +112,7 @@
   </div>
 
  <main id="bloco-detalhes" class="conteudo">
-    <div class="calculator-container">
-	      <h2>Calculadora de Conta de Água</h2>
-      <p>Preencha os campos abaixo para calcular o valor da sua conta.</p>
-
-      <div class="input-group">
-        <label for="consumo">Consumo (m³):</label>
-        <input type="number" id="consumo" placeholder="Ex: 15" onchange="calcularValor(); atualizarTextoExplicativo();" />
-      </div>
-
-      <div class="input-group">
-        <label for="valorMinimo">Valor Mínimo (R$):</label>
-        <input type="number" id="valorMinimo" step="0.01" value="68.40" onchange="calcularValor(); atualizarTextoExplicativo();" />
-      </div>
-
-      <div class="input-group">
-        <label for="valorM3">Valor por m³ excedente (R$):</label>
-        <input type="number" id="valorM3" step="0.01" value="8.59" onchange="calcularValor(); atualizarTextoExplicativo();" />
-      </div>
-
-      <div class="input-group">
-        <label for="valorTotal">Total a pagar (R$):</label>
-        <input type="text" id="valorTotal" readonly />
-      </div>
-    </div>
-
-    <div id="textoExplicativo" class="result-box"></div>
-
-    <div>
-      <a id="whatsappLink" href="#" target="_blank">
-        <button>Enviar cálculo via WhatsApp</button>
-      </a>
-    </div>
-  </main>
+		  </main>
 
   <script src="script.js"></script>
 </body>

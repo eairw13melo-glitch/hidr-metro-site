@@ -75,10 +75,22 @@ function logout() {
   window.location.href = "index.html";
 }
 
-function hardReset() {
+function hardResetConfirm() {
   if (confirm("ATENÇÃO: Isso apagará TODOS os dados salvos no seu navegador (leituras, blocos, configurações) e recarregará a página. Deseja continuar?")) {
     localStorage.clear();
     window.location.reload();
+  }
+}
+
+function toggleCalculadora() {
+  const calc = document.getElementById("calculator-container");
+  if (calc) {
+    calc.style.display = calc.style.display === "none" ? "block" : "none";
+    if (calc.style.display === "block") {
+      // Inicializa a calculadora ao abrir
+      calcularValor();
+      atualizarTextoExplicativo();
+    }
   }
 }
 
@@ -149,6 +161,96 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ============== CRUD DE BLOCOS ==============
+
+// ============== IMPRESSÃO DE RECIBO (NOVO) ==============
+function abrirModalImpressaoRecibo() {
+  const modal = document.getElementById('modal-impressao-recibo');
+  if (!modal) return;
+  
+  popularBlocosRecibo();
+  modal.style.display = 'block';
+}
+
+function fecharModalImpressaoRecibo() {
+  const modal = document.getElementById('modal-impressao-recibo');
+  if (modal) modal.style.display = 'none';
+}
+
+function popularBlocosRecibo() {
+  const blocos = carregarBlocos();
+  const selectBloco = document.getElementById('select-bloco-recibo');
+  if (!selectBloco) return;
+
+  selectBloco.innerHTML = '<option value="">-- Selecione um Bloco --</option>';
+  blocos.forEach((bloco, index) => {
+    const option = document.createElement('option');
+    option.value = index;
+    option.textContent = bloco.nome;
+    selectBloco.appendChild(option);
+  });
+  
+  // Tenta popular os meses para o primeiro bloco, se houver
+  if (blocos.length > 0) {
+    popularMesesRecibo();
+  }
+}
+
+function popularMesesRecibo() {
+  const selectBloco = document.getElementById('select-bloco-recibo');
+  const selectMes = document.getElementById('select-mes-recibo');
+  if (!selectBloco || !selectMes) return;
+
+  const blocoIndex = selectBloco.value;
+  selectMes.innerHTML = '<option value="">-- Selecione o Mês --</option>';
+
+  if (blocoIndex === "") return;
+
+  const blocos = carregarBlocos();
+  const bloco = blocos[blocoIndex];
+  
+  if (bloco && bloco.historico) {
+    // Obtém as chaves (meses) do histórico e ordena do mais recente para o mais antigo
+    const meses = Object.keys(bloco.historico).sort().reverse();
+    
+    meses.forEach(mes => {
+      const option = document.createElement('option');
+      option.value = mes;
+      option.textContent = formatarMesLabel(mes);
+      selectMes.appendChild(option);
+    });
+  }
+}
+
+function imprimirReciboSelecionado(event) {
+  event.preventDefault();
+  
+  const selectBloco = document.getElementById('select-bloco-recibo');
+  const selectMes = document.getElementById('select-mes-recibo');
+  
+  const blocoIndex = selectBloco.value;
+  const mes = selectMes.value;
+  
+  if (blocoIndex === "" || mes === "") {
+    alert("Por favor, selecione o Bloco e o Mês.");
+    return;
+  }
+  
+  // Redireciona para a página de recibo com os parâmetros
+  // O recibo.html precisará ser adaptado para ler esses parâmetros e gerar o recibo
+  window.location.href = `recibo.html?bloco=${blocoIndex}&mes=${mes}`;
+  
+  fecharModalImpressaoRecibo();
+}
+
+// Função auxiliar para formatar o mês (ex: "2025-11" -> "Novembro de 2025")
+function formatarMesLabel(mes) {
+  if (!mes) return "Mês Atual";
+  const [ano, mesNum] = mes.split('-');
+  const data = new Date(ano, mesNum - 1);
+  return data.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+}
+
+// ============== CRUD DE BLOCOS ==============
 function criarBloco() {
   const nome = prompt("Nome do novo bloco:");
   if (!nome) return;
@@ -204,31 +306,38 @@ function renderizarListaDeBlocos() {
   if (!container) return;
   container.innerHTML = "";
 
-  if (blocos.length === 0) {
-    container.innerHTML = `
-      <div class="bloco">
-        <p>Nenhum bloco cadastrado ainda.</p>
-        <button onclick="criarBloco()">+ Adicionar Bloco</button>
-      </div>
-    `;
-    return;
-  }
+  // Adiciona o bloco da calculadora se estiver visível
+  const calcContainer = document.getElementById("calculator-container");
+  if (calcContainer && calcContainer.style.display === "block") {
+    // Não faz nada, a calculadora já está no HTML
+  } else {
+    // Se a calculadora não estiver visível, renderiza a lista de blocos
+    if (blocos.length === 0) {
+      container.innerHTML = `
+        <div class="bloco">
+          <p>Nenhum bloco cadastrado ainda.</p>
+          <button onclick="criarBloco()">+ Adicionar Bloco</button>
+        </div>
+      `;
+      return;
+    }
 
-  blocos.forEach((bloco, index) => {
-    const div = document.createElement("div");
-    div.className = "bloco";
-    div.innerHTML = `
-      <h2>${bloco.nome}</h2>
-      <p><strong>Endereço:</strong> ${bloco.endereco || "-"}</p>
-      <p><strong>Síndico:</strong> ${bloco.sindico || "-"}</p>
-      <p><strong>Tarifa mínima:</strong> R$ ${getTarifa(bloco).minimo.toFixed(2)}</p>
-      <div class="acoes">
-        <button onclick="window.location.href='bloco.html?id=${index}'">🔍 Acessar Bloco</button>
-        <button class="btn-danger-outline" onclick="excluirBloco(${index})">🗑️ Excluir Bloco</button>
-      </div>
-    `;
-    container.appendChild(div);
-  });
+    blocos.forEach((bloco, index) => {
+      const div = document.createElement("div");
+      div.className = "bloco";
+      div.innerHTML = `
+        <h2>${bloco.nome}</h2>
+        <p><strong>Endereço:</strong> ${bloco.endereco || "-"}</p>
+        <p><strong>Síndico:</strong> ${bloco.sindico || "-"}</p>
+        <p><strong>Tarifa mínima:</strong> R$ ${getTarifa(bloco).minimo.toFixed(2)}</p>
+        <div class="acoes">
+          <button onclick="window.location.href='bloco.html?id=${index}'">🔍 Acessar Bloco</button>
+          <button class="btn-danger-outline" onclick="excluirBloco(${index})">🗑️ Excluir Bloco</button>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+  }
 }
 
 function excluirBloco(index) {

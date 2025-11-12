@@ -345,6 +345,55 @@ input.input-curto {
   padding: 40px;
 }
 
+/* Estilos de impressão para harmonização */
+@media print {
+  /* Garante que a capa ocupe uma página A4 inteira */
+  .boleto-capa {
+    min-height: 297mm; /* Altura de uma folha A4 */
+    height: 297mm;
+    width: 210mm; /* Largura de uma folha A4 */
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Garante que cada folha de boleto (com 2 boletos) comece em uma nova página */
+  .boleto-sheet {
+    page-break-before: always;
+    width: 210mm;
+    height: 297mm;
+    margin: 0;
+    padding: 10mm; /* Margem de impressão */
+    box-sizing: border-box;
+  }
+
+  /* Ajusta a contracapa para a última página */
+  .boleto-contracapa {
+    page-break-before: always;
+    min-height: 297mm;
+    height: 297mm;
+    width: 210mm;
+    margin: 0;
+    padding: 40px;
+    box-sizing: border-box;
+  }
+
+  /* Garante que cada boleto ocupe metade da página */
+  .boleto-half {
+    height: 50%;
+    padding: 10px 0;
+    box-sizing: border-box;
+  }
+
+  /* Remove a linha de corte no topo e base da folha, mantendo apenas a do meio */
+  .cut-line.no-scissor {
+    display: none;
+  }
+}
+
 .capa-content {
   text-align: center;
   max-width: 600px;
