@@ -284,6 +284,13 @@ function mesPorExtenso(mes) {
 function gerarRecibo(blocoIndex, mes) {
   const blocos = carregarBlocos();
   const bloco = blocos[blocoIndex];
+  
+  if (!bloco || !bloco.historico || !bloco.historico[mes]) {
+    alert("Dados do bloco ou do mês selecionado não encontrados no histórico.");
+    fecharModalImpressaoRecibo();
+    return;
+  }
+  
   const dadosRecibo = bloco.historico[mes];
   
   // 1. Calcular o valor total do recibo (soma dos total_rs do histórico)
