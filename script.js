@@ -304,39 +304,67 @@ function renderizarListaDeBlocos() {
   const blocos = carregarBlocos();
   const container = document.getElementById("blocos-container");
   if (!container) return;
-  container.innerHTML = "";
-
-  // Adiciona o bloco da calculadora se estiver visível
+  
+  // Mantém a calculadora no DOM
   const calcContainer = document.getElementById("calculator-container");
-  if (calcContainer && calcContainer.style.display === "block") {
-    // Não faz nada, a calculadora já está no HTML
-  } else {
-    // Se a calculadora não estiver visível, renderiza a lista de blocos
+  const listaBlocos = document.getElementById("lista-blocos");
+  
+  // Limpa a lista de blocos (o conteúdo dinâmico)
+  if (listaBlocos) {
+    listaBlocos.innerHTML = '';
+    
     if (blocos.length === 0) {
-      container.innerHTML = `
-        <div class="bloco">
-          <p>Nenhum bloco cadastrado ainda.</p>
-          <button onclick="criarBloco()">+ Adicionar Bloco</button>
-        </div>
-      `;
-      return;
-    }
-
-    blocos.forEach((bloco, index) => {
       const div = document.createElement("div");
       div.className = "bloco";
       div.innerHTML = `
-        <h2>${bloco.nome}</h2>
-        <p><strong>Endereço:</strong> ${bloco.endereco || "-"}</p>
-        <p><strong>Síndico:</strong> ${bloco.sindico || "-"}</p>
-        <p><strong>Tarifa mínima:</strong> R$ ${getTarifa(bloco).minimo.toFixed(2)}</p>
-        <div class="acoes">
-          <button onclick="window.location.href='bloco.html?id=${index}'">🔍 Acessar Bloco</button>
-          <button class="btn-danger-outline" onclick="excluirBloco(${index})">🗑️ Excluir Bloco</button>
-        </div>
+        <p>Nenhum bloco cadastrado ainda.</p>
+        <button onclick="criarBloco()">+ Adicionar Bloco</button>
       `;
-      container.appendChild(div);
-    });
+      listaBlocos.appendChild(div);
+    } else {
+      blocos.forEach((bloco, index) => {
+        const div = document.createElement("div");
+        div.className = "bloco";
+        div.innerHTML = `
+          <h2>${bloco.nome}</h2>
+          <p><strong>Endereço:</strong> ${bloco.endereco || "-"}</p>
+          <p><strong>Síndico:</strong> ${bloco.sindico || "-"}</p>
+          <p><strong>Tarifa mínima:</strong> R$ ${getTarifa(bloco).minimo.toFixed(2)}</p>
+          <div class="acoes">
+            <button onclick="window.location.href='bloco.html?id=${index}'">🔍 Acessar Bloco</button>
+            <button class="btn-danger-outline" onclick="excluirBloco(${index})">🗑️ Excluir Bloco</button>
+          </div>
+        `;
+        listaBlocos.appendChild(div);
+      });
+    }
+    
+    // Ajusta a visibilidade da lista de blocos
+    if (calcContainer && calcContainer.style.display === "block") {
+      listaBlocos.style.display = 'none';
+    } else {
+      listaBlocos.style.display = 'block';
+    }
+  }
+}
+
+// Corrigindo a função toggleCalculadora para manipular a lista de blocos
+function toggleCalculadora() {
+  const calc = document.getElementById("calculator-container");
+  const listaBlocos = document.getElementById("lista-blocos");
+  
+  if (calc && listaBlocos) {
+    if (calc.style.display === "none" || calc.style.display === "") {
+      // Abrir calculadora
+      calc.style.display = "block";
+      listaBlocos.style.display = 'none';
+      calcularValor();
+      atualizarTextoExplicativo();
+    } else {
+      // Fechar calculadora
+      calc.style.display = "none";
+      listaBlocos.style.display = 'block';
+    }
   }
 }
 
