@@ -5,6 +5,7 @@
   <title>Gerador de Recibo</title>
   <link rel="stylesheet" href="style.css" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     /* Estilos específicos para o Gerador de Recibo */
     body {
@@ -179,7 +180,7 @@
       font-size: 15px;
     }
 
-    .print-button {
+    .print-button, .export-pdf-button {
       background-color: #2196F3;
       color: white;
       padding: 10px 20px;
@@ -187,6 +188,11 @@
       border-radius: 5px;
       cursor: pointer;
       margin-top: 20px;
+      margin-left: 10px;
+    }
+    
+    .export-pdf-button {
+      background-color: #007bff; /* Azul diferente para destaque */
     }
 
     @media print {
@@ -207,9 +213,9 @@
         box-shadow: none;
       }
 
-      .form-container, .print-button {
-        display: none;
-      }
+      .form-container,    .print-button, .export-pdf-button {
+      display: none;
+    }}
       
       .assinatura-img {
         right: 50px;
@@ -290,9 +296,10 @@
   </div>
 
   <button class="print-button" onclick="window.print()">Imprimir</button>
+  <button class="export-pdf-button" onclick="exportarParaPDF()">Exportar para PDF</button>
 </div>
 
-<script src="script.js"></script>
+
 <script>
   // A lógica de geração de recibo será adicionada aqui ou em um arquivo JS separado
   // Por enquanto, vamos garantir que o script.js principal não interfira
@@ -389,11 +396,31 @@
 
     document.getElementById("reciboData").innerText = dataFormatada;
 
-    // Lógica simples para número do recibo (pode ser melhorada com localStorage)
-    const numeroRecibo = Math.floor(Math.random() * 100) + 1;
-    document.getElementById("reciboNumero").innerText = `Recibo nº ${String(numeroRecibo).padStart(2, "0")}`;
+    // Lógica para número do recibo sequencial com localStorage
+    let ultimoRecibo = parseInt(localStorage.getItem('ultimoRecibo')) || 0;
+    ultimoRecibo++;
+    localStorage.setItem('ultimoRecibo', ultimoRecibo);
+    
+    document.getElementById("reciboNumero").innerText = `Recibo nº ${String(ultimoRecibo).padStart(2, "0")}`;
 
     document.getElementById("reciboContainer").style.display = "block";
+  }
+
+  function exportarParaPDF() {
+    const element = document.getElementById('reciboContainer');
+    const nomeRecibo = document.getElementById('reciboNumero').innerText.replace(' ', '_');
+    
+    // Configurações para o PDF
+    const opt = {
+      margin: 10,
+      filename: `${nomeRecibo}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    // Gera o PDF
+    html2pdf().set(opt).from(element).save();
   }
 
   function limparTudo() {
@@ -403,6 +430,7 @@
     document.getElementById("data").value = "";
     document.getElementById("formaPagamento").selectedIndex = 0;
     document.getElementById("reciboContainer").style.display = "none";
+    // Não limpa o último número de recibo para manter a sequencialidade
   }
 </script>
 
