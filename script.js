@@ -288,13 +288,28 @@ function gerarRecibo(blocoIndex, mes) {
   
   // 1. Calcular o valor total do recibo (soma dos total_rs do histórico)
   let valorTotal = 0;
-  dadosRecibo.leitura_atual.forEach(apt => {
-    valorTotal += parseFloat(apt.total_rs);
-  });
+  
+  // Verifica se dadosRecibo.leitura_atual existe e é um array
+  if (Array.isArray(dadosRecibo.leitura_atual)) {
+    dadosRecibo.leitura_atual.forEach(apt => {
+      const valor = parseFloat(apt.total_rs);
+      if (!isNaN(valor)) {
+        valorTotal += valor;
+      }
+    });
+  }
   
   // Adiciona o valor da conta Sabesp (se houver)
-  if (bloco.contaSabesp) {
-    valorTotal += parseFloat(bloco.contaSabesp);
+  const contaSabesp = parseFloat(bloco.contaSabesp);
+  if (!isNaN(contaSabesp)) {
+    valorTotal += contaSabesp;
+  }
+  
+  // Se o valor total for 0 ou NaN, retorna um erro
+  if (valorTotal <= 0 || isNaN(valorTotal)) {
+    alert("Não foi possível calcular o valor total do recibo. Verifique os dados de leitura e a conta Sabesp para o mês selecionado.");
+    fecharModalImpressaoRecibo();
+    return;
   }
   
   // 2. Formatar os dados
