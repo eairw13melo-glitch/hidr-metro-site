@@ -1124,7 +1124,7 @@ function renderizarBoletosPage() {
     // cut.innerHTML = `<span>— — — — — — — — — — — — — —  ✂  — — — — — — — — — — — — — —</span>`;
     // sheet.appendChild(cut);
     
-    // sheet.appendChild(criarBoletoHalf(dupla[1], vencLabel, mesReferenciaLabel, bloco));
+    sheet.appendChild(criarBoletoHalf(dupla[1], vencLabel, mesReferenciaLabel, bloco));
     
     // Linha de corte após o segundo boleto (sem tesoura)
     const cutBottom = document.createElement('div');
