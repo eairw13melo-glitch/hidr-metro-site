@@ -308,24 +308,24 @@ function renderizarBlocoIndividual() {
         <button type="button" onclick="salvarTarifaDoBloco(${id})">💾 Salvar Tarifas deste Bloco</button>
       </form>
 
-	      <h3 style="margin-top:10px;">Configurações de Boleto 🧾</h3>
-	      <form class="boleto-form" onsubmit="return false;">
-	        <label for="contaSabesp">Valor da Conta Sabesp (R$):</label>
-	        <input type="number" id="contaSabesp" step="0.01" placeholder="Ex: 1500.00" class="input-curto" onchange="salvarContaSabesp();" />
-        <label for="boleto-servico-leitura">Serviço de Leitura (R$):</label>
-        <input type="number" step="0.01" id="boleto-servico-leitura" class="input-curto">
+		      <h3 style="margin-top:10px;">Configurações de Boleto 🧾</h3>
+		      <form class="boleto-form" onsubmit="return false;">
+		        <label for="contaSabesp">Valor da Conta Sabesp (R$):</label>
+		        <input type="number" id="contaSabesp" step="0.01" placeholder="Ex: 1500.00" class="input-curto" onchange="salvarContaSabesp();" />
+	        <label for="boleto-servico-leitura">Serviço de Leitura (R$):</label>
+	        <input type="number" step="0.01" id="boleto-servico-leitura" class="input-curto">
 
-        <label for="boleto-condominio">Condomínio (R$):</label>
-        <input type="number" step="0.01" id="boleto-condominio" class="input-curto">
+	        <label for="boleto-condominio">Condomínio (R$):</label>
+	        <input type="number" step="0.01" id="boleto-condominio" class="input-curto">
 
-        <label for="boleto-multas-outros">Multas / Outros (R$):</label>
-        <input type="number" step="0.01" id="boleto-multas-outros" class="input-curto">
+	        <label for="boleto-multas-outros">Multas / Outros (R$):</label>
+	        <input type="number" step="0.01" id="boleto-multas-outros" class="input-curto">
 
-        <label for="boleto-obs-geral">Observações Gerais (para todos os boletos):</label>
-        <textarea id="boleto-obs-geral" rows="4"></textarea>
+	        <label for="boleto-obs-geral">Observações Gerais (para todos os boletos):</label>
+	        <textarea id="boleto-obs-geral" rows="4"></textarea>
 
-        <button type="button" onclick="salvarBoletoConfigDoBloco(${id})">💾 Salvar Configurações de Boleto</button>
-      </form>
+	        <button type="button" onclick="salvarBoletoConfigDoBloco(${id})">💾 Salvar Configurações de Boleto</button>
+		      </form>
 
       <div class="acoes">
         <button type="button" onclick="adicionarApartamentoDireto(${id})">+ Adicionar Apartamento</button>
@@ -350,10 +350,10 @@ function renderizarBlocoIndividual() {
 
 function preencherBoletoConfigForm(bloco) {
   const b = bloco.boletoConfig;
-  // Novo campo Conta Sabesp
+  // Campo Conta Sabesp
   const contaSabespInput = document.getElementById("contaSabesp");
   if (contaSabespInput) {
-    contaSabespInput.value = bloco.contaSabesp.toFixed(2);
+    contaSabespInput.value = bloco.contaSabesp ? bloco.contaSabesp.toFixed(2) : "0.00";
   }
   
   document.getElementById("boleto-servico-leitura").value = b.servico_leitura_rs;
@@ -366,6 +366,7 @@ function salvarBoletoConfigDoBloco(blocoIndex) {
   const blocos = carregarBlocos();
   const bloco = blocos[blocoIndex];
 
+  bloco.contaSabesp = Number(document.getElementById("contaSabesp").value) || 0;
   bloco.boletoConfig = {
     servico_leitura_rs: Number(document.getElementById("boleto-servico-leitura").value) || 0,
     condominio_rs: Number(document.getElementById("boleto-condominio").value) || 0,
@@ -571,24 +572,12 @@ function toggleCalculadora() {
   const result = document.getElementById('textoExplicativo');
   const whatsapp = document.getElementById('whatsappLink').parentElement;
   
-  // O campo da Conta Sabesp agora está no formulário de boleto
-  const contaSabespInput = document.getElementById('contaSabesp');
-  const contaSabespLabel = contaSabespInput ? contaSabespInput.previousElementSibling : null;
-
   const isVisible = calc.style.display !== 'none';
 
   calc.style.display = isVisible ? 'none' : 'block';
   result.style.display = isVisible ? 'none' : 'block';
   whatsapp.style.display = isVisible ? 'none' : 'block';
   
-  // Ocultar/Exibir o campo da Conta Sabesp também
-  if (contaSabespInput) {
-    contaSabespInput.style.display = isVisible ? 'none' : 'block';
-  }
-  if (contaSabespLabel) {
-    contaSabespLabel.style.display = isVisible ? 'none' : 'block';
-  }
-
   localStorage.setItem('calculadoraVisivel', isVisible ? 'false' : 'true');
 }
 
@@ -599,33 +588,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const result = document.getElementById('textoExplicativo');
   const whatsapp = document.getElementById('whatsappLink').parentElement;
   
-  // O campo da Conta Sabesp agora está no formulário de boleto
-  const contaSabespInput = document.getElementById('contaSabesp');
-  const contaSabespLabel = contaSabespInput ? contaSabespInput.previousElementSibling : null;
-
   if (isVisible === 'false') {
     calc.style.display = 'none';
     result.style.display = 'none';
     whatsapp.style.display = 'none';
-    
-    if (contaSabespInput) {
-      contaSabespInput.style.display = 'none';
-    }
-    if (contaSabespLabel) {
-      contaSabespLabel.style.display = 'none';
-    }
   } else {
     // Garante que estejam visíveis por padrão se não houver configuração
     calc.style.display = 'block';
     result.style.display = 'block';
     whatsapp.style.display = 'block';
-    
-    if (contaSabespInput) {
-      contaSabespInput.style.display = 'block';
-    }
-    if (contaSabespLabel) {
-      contaSabespLabel.style.display = 'block';
-    }
   }
 });
 	function salvarContaSabesp() {
