@@ -1119,12 +1119,12 @@ function renderizarBoletosPage() {
     sheet.appendChild(criarBoletoHalf(dupla[0], vencLabel, mesReferenciaLabel, bloco));
     
     // Linha de corte entre os boletos (com tesoura)
-    const cut = document.createElement('div');
-    cut.className = 'cut-line';
-    cut.innerHTML = `<span>— — — — — — — — — — — — — —  ✂  — — — — — — — — — — — — — —</span>`;
-    sheet.appendChild(cut);
+    // const cut = document.createElement('div');
+    // cut.className = 'cut-line';
+    // cut.innerHTML = `<span>— — — — — — — — — — — — — —  ✂  — — — — — — — — — — — — — —</span>`;
+    // sheet.appendChild(cut);
     
-    sheet.appendChild(criarBoletoHalf(dupla[1], vencLabel, mesReferenciaLabel, bloco));
+    // sheet.appendChild(criarBoletoHalf(dupla[1], vencLabel, mesReferenciaLabel, bloco));
     
     // Linha de corte após o segundo boleto (sem tesoura)
     const cutBottom = document.createElement('div');
