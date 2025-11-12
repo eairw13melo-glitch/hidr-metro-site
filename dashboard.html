@@ -12,6 +12,7 @@
   <title>Dashboard | Leitura de Hidrômetro</title>
   <link rel="stylesheet" href="style.css" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="logorecibo.png" type="image/png">
 </head>
 <body>
   <script>
@@ -26,7 +27,9 @@
       <input type="file" id="importar-arquivo" accept=".json,application/json" style="display:none" onchange="importarDados(event)" />
       <button type="button" onclick="document.getElementById('importar-arquivo').click()">📥 Importar Dados</button>
 	      <button type="button" onclick="gerarTemplateImportacao()">📄 Gerar Modelo Importação</button>
+      <button type="button" onclick="abrirModalAlterarSenha()">🔑 Alterar Senha</button>
       <button type="button" class="btn-danger" onclick="logout()">Sair</button>
+      <button type="button" class="btn-danger" onclick="hardReset()">⚠️ Hard Reset</button>
     </div>
   </header>
 
@@ -38,6 +41,22 @@
     </div>
   </main>
   <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+  <!-- Modal de Alteração de Senha -->
+  <div id="modal-alterar-senha" class="modal" style="display:none;">
+    <div class="modal-content">
+      <span class="close-button" onclick="fecharModalAlterarSenha()">&times;</span>
+      <h2>Alterar Senha</h2>
+      <form id="form-alterar-senha">
+        <label for="nova-senha">Nova Senha:</label>
+        <input type="password" id="nova-senha" required>
+        <label for="confirmar-senha">Confirmar Nova Senha:</label>
+        <input type="password" id="confirmar-senha" required>
+        <button type="submit">Salvar Nova Senha</button>
+      </form>
+      <p id="senha-erro" style="color: red;"></p>
+    </div>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>

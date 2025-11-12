@@ -72,7 +72,14 @@ function isLogged() {
 }
 function logout() {
   localStorage.removeItem("logado");
-  location.href = "index.html";
+  window.location.href = "index.html";
+}
+
+function hardReset() {
+  if (confirm("ATENÇÃO: Isso apagará TODOS os dados salvos no seu navegador (leituras, blocos, configurações) e recarregará a página. Deseja continuar?")) {
+    localStorage.clear();
+    window.location.reload();
+  }
 }
 
 // ============== TARIFAS POR BLOCO ==============
@@ -947,7 +954,81 @@ function importarDados(event) {
   reader.readAsText(file);
 }
 
-// ============== RESET ==============
+// ============== LOGIN ==============
+
+// Funções para o Modal de Alteração de Senha
+function abrirModalAlterarSenha() {
+  document.getElementById('modal-alterar-senha').style.display = 'block';
+  document.getElementById('senha-erro').innerText = '';
+}
+
+function fecharModalAlterarSenha() {
+  document.getElementById('modal-alterar-senha').style.display = 'none';
+  document.getElementById('form-alterar-senha').reset();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('form-alterar-senha');
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const novaSenha = document.getElementById('nova-senha').value;
+      const confirmarSenha = document.getElementById('confirmar-senha').value;
+      const erro = document.getElementById('senha-erro');
+
+      if (novaSenha !== confirmarSenha) {
+        erro.innerText = 'As senhas não coincidem.';
+        return;
+      }
+
+      if (novaSenha.length < 4) {
+        erro.innerText = 'A senha deve ter no mínimo 4 caracteres.';
+        return;
+      }
+
+      // Salva a nova senha no localStorage
+      localStorage.setItem('senha', novaSenha);
+      erro.innerText = 'Senha alterada com sucesso!';
+      fecharModalAlterarSenha();
+      showToast('Senha alterada com sucesso!');
+    });
+  }
+});
+
+// Define a senha padrão se não existir
+if (!localStorage.getItem('senha')) {
+  localStorage.setItem('senha', '1234'); // Senha padrão inicial
+}
+
+// Lógica de login
+function login(username, password) {
+  const senhaCorreta = localStorage.getItem('senha') || '1234';
+  if (username === "admin" && password === senhaCorreta) {
+    localStorage.setItem("logado", "true");
+    window.location.href = "dashboard.html";
+  } else {
+    return "Usuário ou senha incorretos.";
+  }
+}
+
+// Lógica de login para o login-seguro.js
+if (document.getElementById('login-form')) {
+  document.getElementById('login-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const erro = document.getElementById('login-error');
+    const resultado = login(username, password);
+    if (resultado) {
+      erro.innerText = resultado;
+    }
+  });
+}
+
+// Lógica de login para o login-seguro.js (continuação)
+// ... (restante da lógica de login)
+
+// ============== LOGIN ==============
 function resetarBlocoPerguntar() {
   const id = Number(new URLSearchParams(location.search).get("id"));
   const blocos = carregarBlocos();
