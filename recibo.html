@@ -180,20 +180,24 @@
       font-size: 15px;
     }
 
-    .print-button, .export-pdf-button {
-      background-color: #2196F3;
-      color: white;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-top: 20px;
-      margin-left: 10px;
-    }
-    
-    .export-pdf-button {
-      background-color: #007bff; /* Azul diferente para destaque */
-    }
+	    .print-button, .export-pdf-button, .back-button {
+	      background-color: #2196F3;
+	      color: white;
+	      padding: 10px 20px;
+	      border: none;
+	      border-radius: 5px;
+	      cursor: pointer;
+	      margin-top: 20px;
+	      margin-left: 10px;
+	    }
+	    
+	    .export-pdf-button {
+	      background-color: #007bff; /* Azul diferente para destaque */
+	    }
+	    
+	    .back-button {
+	      background-color: #6c757d; /* Cinza para botão de voltar */
+	    }
 
     @media print {
       body * {
@@ -213,9 +217,9 @@
         box-shadow: none;
       }
 
-      .form-container,    .print-button, .export-pdf-button {
-      display: none;
-    }}
+	      .form-container, .print-button, .export-pdf-button, .back-button {
+	      display: none;
+	    }}
       
       .assinatura-img {
         right: 50px;
@@ -289,6 +293,7 @@
 
   <button class="print-button" onclick="window.print()">Imprimir</button>
   <button class="export-pdf-button" onclick="exportarParaPDF()">Exportar para PDF</button>
+  <button class="back-button" onclick="window.location.href='dashboard.html'">Voltar para Dashboard</button>
 </div>
 
 
