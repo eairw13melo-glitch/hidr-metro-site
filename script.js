@@ -108,13 +108,22 @@ function setTarifa(bloco, valores) {
   };
 }
 function calcularValorEscalonado(m3, tarifa) {
-	  const { minimo, faixa_11_20, faixa_21_50 } = tarifa;
-	  if (m3 <= 10) return minimo;
-	  if (m3 <= 20) return minimo + (m3 - 10) * faixa_11_20;
-	  const faixa2 = 10 * faixa_11_20;
-	  const faixa3 = (m3 - 20) * faixa_21_50;
-	  return minimo + faixa2 + faixa3;
-	}
+		  // A tarifa real por m³ é calculada no rateio, mas esta função usa as tarifas configuradas.
+		  // O usuário indicou que a lógica deve ser: Mínimo + (m3 - 10) * Valor_por_m3_Rateado.
+		  // No entanto, a função original usa as tarifas fixas (faixa_11_20, faixa_21_50).
+		  // Para refletir a lógica do usuário, vamos simplificar a tarifa para usar apenas a faixa_11_20 como o valor por m³ excedente.
+		  // A tarifa real de rateio será aplicada na função calcularRateioSabesp.
+		  
+		  const { minimo, faixa_11_20 } = tarifa; // Usando apenas o mínimo e a primeira faixa como tarifa excedente
+		  
+		  if (m3 <= 10) {
+		    return minimo;
+		  }
+		  
+		  // Lógica do usuário: Mínimo + (m3 - 10) * Valor_por_m3_Excedente
+		  // Usamos faixa_11_20 como o valor por m³ excedente para manter a estrutura de configuração.
+		  return minimo + (m3 - 10) * faixa_11_20;
+		}
 	
 	// Função para recalcular o valor de todos os apartamentos no bloco
 	function recalcularValoresDoBloco(blocoIndex) {
