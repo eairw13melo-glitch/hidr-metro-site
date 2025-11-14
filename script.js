@@ -149,6 +149,77 @@ function salvarBlocos(blocos) {
   localStorage.setItem("blocos", JSON.stringify(blocos));
 }
 
+// ============== EXPORTAÇÃO/IMPORTAÇÃO DE DADOS (JSON) ==============
+function exportarDadosJSON() {
+  const blocos = carregarBlocos();
+  if (blocos.length === 0) {
+    alert("Não há dados para exportar.");
+    return;
+  }
+  const dataStr = JSON.stringify(blocos, null, 2);
+  const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+
+  const exportFileDefaultName = `hidrometro_backup_${new Date().toISOString().slice(0,10)}.json`;
+
+  const linkElement = document.createElement('a');
+  linkElement.setAttribute('href', dataUri);
+  linkElement.setAttribute('download', exportFileDefaultName);
+  linkElement.click();
+  showToast("Dados exportados com sucesso!");
+}
+
+function acionarImportacaoJSON() {
+  document.getElementById('import-json-input').click();
+}
+
+function importarDadosJSON(event) {
+  const file = event.target.files[0];
+  if (!file) {
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const importedData = JSON.parse(e.target.result);
+      if (confirm("ATENÇÃO: A importação substituirá todos os dados de blocos existentes. Deseja continuar?")) {
+        saveData("blocos", importedData);
+        showToast("Dados importados com sucesso! Recarregando a página...");
+        setTimeout(() => window.location.reload(), 1500);
+      }
+    } catch (error) {
+      console.error("Erro ao importar dados:", error);
+      alert("Erro ao processar o arquivo JSON. Verifique se o formato está correto.");
+    }
+    // Limpa o valor do input para permitir a importação do mesmo arquivo novamente
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ============== CONTADOR DE ARMAZENAMENTO LOCAL ==============
+function atualizarContadorStorage() {
+  if (!navigator.storage || !navigator.storage.estimate) {
+    console.warn("API de Storage Estimation não suportada.");
+    return;
+  }
+
+  navigator.storage.estimate().then(estimate => {
+    const usageMB = (estimate.usage / (1024 * 1024)).toFixed(2);
+    const quotaMB = (estimate.quota / (1024 * 1024)).toFixed(2);
+    const percent = ((estimate.usage / estimate.quota) * 100).toFixed(2);
+
+    const contadorElement = document.getElementById('storage-counter');
+    if (contadorElement) {
+      contadorElement.innerHTML = `
+        Armazenamento Local: ${usageMB} MB de ${quotaMB} MB (${percent}%)
+      `;
+    }
+  }).catch(error => {
+    console.error("Erro ao estimar o uso de armazenamento:", error);
+  });
+}
+
 // ============== BOOT / ROTAS ==============
 document.addEventListener("DOMContentLoaded", () => {
   const path = location.pathname;
@@ -162,6 +233,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Roteamento simples
   if (path.endsWith("dashboard.html")) {
     renderizarListaDeBlocos();
+    atualizarContadorStorage(); // Chama a função ao carregar o dashboard
   } else if (path.endsWith("bloco.html")) {
     renderizarBlocoIndividual();
   } else if (path.endsWith("boletos.html")) {
@@ -650,10 +722,17 @@ function renderizarBlocoIndividual() {
 	        <label for="boleto-obs-geral">Observações Gerais (para todos os boletos):</label>
 	        <textarea id="boleto-obs-geral" rows="4"></textarea>
 
-	        <button type="button" onclick="salvarBoletoConfigDoBloco(${id})">💾 Salvar Configurações de Boleto</button>
-		      </form>
-
-      <div class="acoes">
+		        <button type="button" onclick="salvarBoletoConfigDoBloco(${id})">💾 Salvar Configurações de Boleto</button>
+			      </form>
+			
+			      <h3 style="margin-top:10px;">Verificação de Cálculo (Boleto) ✅</h3>
+			      <div id="verificacao-calculo">
+			        <p>Clique no botão abaixo para verificar se o valor total da conta Sabesp (R$ ${bloco.contaSabesp.toFixed(2)}) está correto com base no rateio.</p>
+			        <button type="button" onclick="verificarCalculoBoleto(${id})">Verificar Cálculo</button>
+			        <p id="resultado-verificacao" style="font-weight: bold; margin-top: 5px;"></p>
+			      </div>
+			
+			      <div class="acoes">
         <button type="button" onclick="adicionarApartamentoDireto(${id})">+ Adicionar Apartamento</button>
         <button type="button" onclick="salvarLeituraDoMes(${id})">💾 Salvar Leitura do Mês</button>
       </div>
@@ -792,6 +871,7 @@ function gerarTabelaLeituraAtual(bloco, blocoIndex) {
             <td><input type="text" value="${apt.obs_boleto}" onchange="editarCampo(${blocoIndex}, ${i}, 'obs_boleto', this.value)"></td>
             <td>
               <button type="button" onclick="salvarApartamentoDireto(${blocoIndex}, ${i})">💾</button>
+              <button type="button" onclick="abrirModalCapturaFoto(${blocoIndex}, ${i})">📷</button>
               <button type="button" class="btn-danger" onclick="removerApartamento(${blocoIndex}, ${i})">🗑️</button>
             </td>
           </tr>
@@ -890,6 +970,122 @@ function editarCampo(blocoIndex, aptIndex, campo, valor) {
   salvarBlocos(blocos);
 }
 
+// ============== CAPTURA DE FOTO (WEBCAM/UPLOAD) ==============
+let currentAptIndex = -1;
+let currentBlocoIndex = -1;
+let currentStream = null;
+
+function abrirModalCapturaFoto(blocoIndex, aptIndex) {
+  currentBlocoIndex = blocoIndex;
+  currentAptIndex = aptIndex;
+  
+  const blocos = carregarBlocos();
+  const apt = blocos[blocoIndex].leitura_atual[aptIndex];
+  
+  document.getElementById('foto-apt-nome').textContent = apt.numero;
+  document.getElementById('modal-captura-foto').style.display = 'block';
+  
+  // Tenta iniciar a câmera
+  iniciarCamera();
+}
+
+function fecharModalCapturaFoto() {
+  document.getElementById('modal-captura-foto').style.display = 'none';
+  pararCamera();
+}
+
+function iniciarCamera() {
+  const video = document.getElementById('video-stream');
+  const uploadView = document.getElementById('upload-view');
+  const cameraView = document.getElementById('camera-view');
+  
+  uploadView.style.display = 'none';
+  cameraView.style.display = 'block';
+  
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }) // Tenta câmera traseira
+    .then(stream => {
+      currentStream = stream;
+      video.srcObject = stream;
+    })
+    .catch(err => {
+      console.error("Erro ao acessar a câmera: ", err);
+      alert("Não foi possível acessar a câmera. Tente o modo Upload.");
+      alternarModoCaptura();
+    });
+}
+
+function pararCamera() {
+  if (currentStream) {
+    currentStream.getTracks().forEach(track => track.stop());
+    currentStream = null;
+  }
+}
+
+function alternarModoCaptura() {
+  const uploadView = document.getElementById('upload-view');
+  const cameraView = document.getElementById('camera-view');
+  const alternarBtn = document.querySelector('#modal-captura-foto .modal-actions button:last-child');
+  
+  if (cameraView.style.display !== 'none') {
+    pararCamera();
+    cameraView.style.display = 'none';
+    uploadView.style.display = 'block';
+    alternarBtn.textContent = 'Alternar para Câmera';
+  } else {
+    uploadView.style.display = 'none';
+    iniciarCamera();
+    alternarBtn.textContent = 'Alternar para Upload';
+  }
+}
+
+function capturarFoto() {
+  const video = document.getElementById('video-stream');
+  const canvas = document.getElementById('canvas-foto');
+  const context = canvas.getContext('2d');
+  const preview = document.getElementById('foto-preview');
+  
+  context.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const dataURL = canvas.toDataURL('image/jpeg', 0.8);
+  
+  preview.src = dataURL;
+  preview.style.display = 'block';
+  canvas.style.display = 'none';
+}
+
+function uploadFoto(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const preview = document.getElementById('foto-preview');
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+    document.getElementById('canvas-foto').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function salvarFoto() {
+  const preview = document.getElementById('foto-preview');
+  const dataURL = preview.src;
+  
+  if (!dataURL || dataURL.includes('data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7')) {
+    alert("Nenhuma foto capturada ou carregada.");
+    return;
+  }
+  
+  const blocos = carregarBlocos();
+  const apt = blocos[currentBlocoIndex].leitura_atual[currentAptIndex];
+  
+  // Salva a foto (Base64) no objeto do apartamento
+  apt.foto_hidrometro = dataURL;
+  
+  salvarBlocos(blocos);
+  showToast(`Foto do ${apt.numero} salva com sucesso!`);
+  fecharModalCapturaFoto();
+}
+
 // ============== LÓGICA SABESP ==============
 
 // Função para alternar a visibilidade da calculadora
@@ -925,7 +1121,33 @@ document.addEventListener('DOMContentLoaded', () => {
     whatsapp.style.display = 'block';
   }
 });
-	function salvarContaSabesp() {
+	function verificarCalculoBoleto(blocoIndex) {
+  const blocos = carregarBlocos();
+  const bloco = blocos[blocoIndex];
+  const resultadoEl = document.getElementById('resultado-verificacao');
+  
+  if (!bloco || !resultadoEl) return;
+
+  // 1. Calcular o valor total do rateio (soma dos total_rs de todos os apartamentos)
+  const totalRateio = bloco.leitura_atual.reduce((acc, apt) => acc + (parseFloat(apt.total_rs) || 0), 0);
+  
+  // 2. Obter o valor da conta Sabesp configurado
+  const contaSabesp = parseFloat(bloco.contaSabesp) || 0;
+  
+  // 3. Comparar os valores
+  // Usamos um pequeno delta (0.01) para compensar erros de ponto flutuante
+  const diferenca = Math.abs(totalRateio - contaSabesp);
+  
+  if (diferenca < 0.01) {
+    resultadoEl.style.color = 'green';
+    resultadoEl.textContent = `✅ Cálculo Verificado: O total do rateio (R$ ${totalRateio.toFixed(2)}) é igual ao valor da Conta Sabesp (R$ ${contaSabesp.toFixed(2)}).`;
+  } else {
+    resultadoEl.style.color = 'red';
+    resultadoEl.textContent = `❌ Divergência de Cálculo: O total do rateio (R$ ${totalRateio.toFixed(2)}) é diferente do valor da Conta Sabesp (R$ ${contaSabesp.toFixed(2)}). Diferença: R$ ${diferenca.toFixed(2)}.`;
+  }
+}
+
+function salvarContaSabesp() {
 	  const id = Number(new URLSearchParams(location.search).get("id"));
 	  const blocos = carregarBlocos();
 	  const bloco = blocos[id];
