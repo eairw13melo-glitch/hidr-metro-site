@@ -1,86 +1,58 @@
 // Ponto de Entrada Principal e Roteamento (main.js)
 
-import { isLogged, logout, hardResetConfirm } from './auth.js';
-import { atualizarContadorStorage, exportarDadosJSON, acionarImportacaoJSON, importarDadosJSON } from './utils.js';
-import { toggleCalculadora, calcularValor, atualizarTextoExplicativo } from './calculos.js';
-import { 
-  renderizarListaDeBlocos, criarBloco, editarBloco, excluirBloco, 
-  abrirModalImpressaoRecibo, popularMesesRecibo, gerarReciboParaImpressao, 
-  fecharModalVisualizacaoRecibo, imprimirRecibo, exportarParaPDF, 
-  renderizarBlocoIndividual, renderizarBoletosPage, atualizarBoletos, 
-  exportarLeituraAtual, importarLeituraAtual, gerarTemplateImportacao, 
-  exportarHistorico, importarHistorico,
-  removerApartamento, salvarLeitura, resetarBlocoPerguntar, adicionarApartamento,
-  // Funções internas do bloco-logic que são chamadas no HTML
-  editarInformacoesBloco, gerarExplicacaoWhatsApp, salvarTarifaDoBloco, salvarContaSabesp, salvarBoletoConfigDoBloco, verificarCalculoBoleto, salvarLeituraDoMes, adicionarApartamento, removerApartamento, salvarLeitura, resetarBlocoPerguntar
-} from './bloco-logic.js';
+// Ponto de Entrada Principal e Roteamento (main.js)
 
-// Expondo funções globais para uso no HTML (necessário para onclick)
-window.isLogged = isLogged;
-window.logout = logout;
-window.hardResetConfirm = hardResetConfirm;
-window.toggleCalculadora = toggleCalculadora;
-window.calcularValor = calcularValor;
-window.atualizarTextoExplicativo = atualizarTextoExplicativo;
-window.exportarDadosJSON = exportarDadosJSON;
-window.acionarImportacaoJSON = acionarImportacaoJSON;
-window.importarDadosJSON = importarDadosJSON;
+// Importação e Exposição de Funções para o Escopo Global (window)
+// Isso é necessário porque o HTML usa 'onclick="funcao()"' e não está usando type="module"
 
-// Funções de Bloco/UI
-window.renderizarListaDeBlocos = renderizarListaDeBlocos;
-window.criarBloco = criarBloco;
-window.editarBloco = editarBloco;
-window.excluirBloco = excluirBloco;
-window.abrirModalImpressaoRecibo = abrirModalImpressaoRecibo;
-window.popularMesesRecibo = popularMesesRecibo;
-window.gerarReciboParaImpressao = gerarReciboParaImpressao;
-window.fecharModalVisualizacaoRecibo = fecharModalVisualizacaoRecibo;
-window.imprimirRecibo = imprimirRecibo;
-window.exportarParaPDF = exportarParaPDF;
-window.renderizarBlocoIndividual = renderizarBlocoIndividual;
-window.renderizarBoletosPage = renderizarBoletosPage;
-window.atualizarBoletos = atualizarBoletos;
-window.exportarLeituraAtual = exportarLeituraAtual;
-window.importarLeituraAtual = importarLeituraAtual;
-window.gerarTemplateImportacao = gerarTemplateImportacao;
-window.exportarHistorico = exportarHistorico;
-window.importarHistorico = importarHistorico;
-window.removerApartamento = removerApartamento;
-window.salvarLeitura = salvarLeitura;
-window.resetarBlocoPerguntar = resetarBlocoPerguntar;
-window.adicionarApartamento = adicionarApartamento;
+async function initialize() {
+  // Importa todos os módulos
+  const auth = await import('./auth.js');
+  const utils = await import('./utils.js');
+  const calculos = await import('./calculos.js');
+  const blocoLogic = await import('./bloco-logic.js');
 
-// Funções de Bloco/UI que são chamadas no HTML
-window.editarInformacoesBloco = editarInformacoesBloco;
-window.gerarExplicacaoWhatsApp = gerarExplicacaoWhatsApp;
-window.salvarTarifaDoBloco = salvarTarifaDoBloco;
-window.salvarContaSabesp = salvarContaSabesp;
-window.salvarBoletoConfigDoBloco = salvarBoletoConfigDoBloco;
-window.verificarCalculoBoleto = verificarCalculoBoleto;
-window.salvarLeituraDoMes = salvarLeituraDoMes;
-window.adicionarApartamento = adicionarApartamento;
-window.removerApartamento = removerApartamento;
-window.salvarLeitura = salvarLeitura;
-window.resetarBlocoPerguntar = resetarBlocoPerguntar;
+  // Expõe as funções de auth
+  window.isLogged = auth.isLogged;
+  window.logout = auth.logout;
+  window.hardResetConfirm = auth.hardResetConfirm;
+  
+  // Expõe as funções de utils
+  window.atualizarContadorStorage = utils.atualizarContadorStorage;
+  window.exportarDadosJSON = utils.exportarDadosJSON;
+  window.acionarImportacaoJSON = utils.acionarImportacaoJSON;
+  window.importarDadosJSON = utils.importarDadosJSON;
 
+  // Expõe as funções de calculos
+  window.toggleCalculadora = calculos.toggleCalculadora;
+  window.calcularValor = calculos.calcularValor;
+  window.atualizarTextoExplicativo = calculos.atualizarTextoExplicativo;
 
-// ============== BOOT / ROTAS ==============
-document.addEventListener("DOMContentLoaded", () => {
-  const path = location.pathname;
+  // Expõe as funções de blocoLogic
+  Object.keys(blocoLogic).forEach(key => {
+    window[key] = blocoLogic[key];
+  });
 
-  // Página de login: a lógica de login está em login-seguro.js
-  if (document.getElementById("login-form")) return;
+  // ============== BOOT / ROTAS ==============
+  document.addEventListener("DOMContentLoaded", () => {
+    const path = location.pathname;
 
-  // Páginas internas exigem login (há script inline nas páginas também)
-  if (!isLogged()) return;
+    // Página de login: a lógica de login está em login-seguro.js
+    if (document.getElementById("login-form")) return;
 
-  // Roteamento simples
-  if (path.endsWith("dashboard.html")) {
-    renderizarListaDeBlocos();
-    atualizarContadorStorage(); // Chama a função ao carregar o dashboard
-  } else if (path.endsWith("bloco.html")) {
-    renderizarBlocoIndividual();
-  } else if (path.endsWith("boletos.html")) {
-    renderizarBoletosPage();
-  }
-});
+    // Páginas internas exigem login (há script inline nas páginas também)
+    if (!auth.isLogged()) return;
+
+    // Roteamento simples
+    if (path.endsWith("dashboard.html")) {
+      blocoLogic.renderizarListaDeBlocos();
+      utils.atualizarContadorStorage(); // Chama a função ao carregar o dashboard
+    } else if (path.endsWith("bloco.html")) {
+      blocoLogic.renderizarBlocoIndividual();
+    } else if (path.endsWith("boletos.html")) {
+      blocoLogic.renderizarBoletosPage();
+    }
+  });
+}
+
+initialize();
