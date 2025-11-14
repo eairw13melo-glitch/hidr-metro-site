@@ -9,6 +9,7 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self';">
   <title>Dashboard | Leitura de Hidrômetro</title>
   <link rel="stylesheet" href="style.css" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -39,7 +40,10 @@
   <main id="blocos-container">
     <div id="storage-counter" style="text-align: center; margin-bottom: 10px; font-size: 0.9em; color: #666;"></div>
     <div id="calculator-container" class="calculator-container" style="display:none;">
-			      <h2>Calculadora de Conta de Água</h2>
+				      <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+				        <img src="logorecibo.png" alt="Logo" style="width: 50px; height: 50px; object-fit: contain;">
+				        <h2>Calculadora de Conta de Água</h2>
+				      </div>
 			      <p>Preencha os campos abaixo para calcular o valor da sua conta.</p>
 		
 			      <div class="input-group">
@@ -74,7 +78,7 @@
 
     </div>
   </main>
-  <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+
   <!-- Modal de Alteração de Senha -->
   <div id="modal-alterar-senha" class="modal" style="display:none;">
     <div class="modal-content">
@@ -143,6 +147,6 @@
 	    </div>
 	  </div>
 
-  <script src="script.js"></script>
+  <script type="module" src="main.js"></script>
 </body>
 </html>
