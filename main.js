@@ -2,7 +2,7 @@
 
 import { isLogged, logout, hardResetConfirm } from './auth.js';
 import { atualizarContadorStorage, exportarDadosJSON, acionarImportacaoJSON, importarDadosJSON } from './utils.js';
-import { toggleCalculadora } from './calculos.js';
+import { toggleCalculadora, calcularValor, atualizarTextoExplicativo } from './calculos.js';
 import { 
   renderizarListaDeBlocos, criarBloco, editarBloco, excluirBloco, 
   abrirModalImpressaoRecibo, popularMesesRecibo, gerarReciboParaImpressao, 
@@ -10,7 +10,9 @@ import {
   renderizarBlocoIndividual, renderizarBoletosPage, atualizarBoletos, 
   exportarLeituraAtual, importarLeituraAtual, gerarTemplateImportacao, 
   exportarHistorico, importarHistorico,
-  removerApartamento, salvarLeitura, resetarBlocoPerguntar, adicionarApartamento
+  removerApartamento, salvarLeitura, resetarBlocoPerguntar, adicionarApartamento,
+  // Funções internas do bloco-logic que são chamadas no HTML
+  editarInformacoesBloco, gerarExplicacaoWhatsApp, salvarTarifaDoBloco, salvarContaSabesp, salvarBoletoConfigDoBloco, verificarCalculoBoleto, salvarLeituraDoMes, adicionarApartamento, removerApartamento, salvarLeitura, resetarBlocoPerguntar
 } from './bloco-logic.js';
 
 // Expondo funções globais para uso no HTML (necessário para onclick)
@@ -18,6 +20,8 @@ window.isLogged = isLogged;
 window.logout = logout;
 window.hardResetConfirm = hardResetConfirm;
 window.toggleCalculadora = toggleCalculadora;
+window.calcularValor = calcularValor;
+window.atualizarTextoExplicativo = atualizarTextoExplicativo;
 window.exportarDadosJSON = exportarDadosJSON;
 window.acionarImportacaoJSON = acionarImportacaoJSON;
 window.importarDadosJSON = importarDadosJSON;
@@ -45,6 +49,19 @@ window.removerApartamento = removerApartamento;
 window.salvarLeitura = salvarLeitura;
 window.resetarBlocoPerguntar = resetarBlocoPerguntar;
 window.adicionarApartamento = adicionarApartamento;
+
+// Funções de Bloco/UI que são chamadas no HTML
+window.editarInformacoesBloco = editarInformacoesBloco;
+window.gerarExplicacaoWhatsApp = gerarExplicacaoWhatsApp;
+window.salvarTarifaDoBloco = salvarTarifaDoBloco;
+window.salvarContaSabesp = salvarContaSabesp;
+window.salvarBoletoConfigDoBloco = salvarBoletoConfigDoBloco;
+window.verificarCalculoBoleto = verificarCalculoBoleto;
+window.salvarLeituraDoMes = salvarLeituraDoMes;
+window.adicionarApartamento = adicionarApartamento;
+window.removerApartamento = removerApartamento;
+window.salvarLeitura = salvarLeitura;
+window.resetarBlocoPerguntar = resetarBlocoPerguntar;
 
 
 // ============== BOOT / ROTAS ==============
