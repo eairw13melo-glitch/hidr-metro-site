@@ -198,26 +198,65 @@ function importarDadosJSON(event) {
 }
 
 // ============== CONTADOR DE ARMAZENAMENTO LOCAL ==============
-function atualizarContadorStorage() {
-  if (!navigator.storage || !navigator.storage.estimate) {
-    console.warn("API de Storage Estimation não suportada.");
-    return;
+
+// Função alternativa para estimar o uso do localStorage (mais precisa para o nosso caso)
+function estimateLocalStorageUsage() {
+  let totalBytes = 0;
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    const value = localStorage.getItem(key);
+    // Estima o tamanho: 2 bytes por caractere (UTF-16) + tamanho da chave
+    totalBytes += (key.length + value.length) * 2; 
   }
+  return totalBytes;
+}
 
-  navigator.storage.estimate().then(estimate => {
-    const usageMB = (estimate.usage / (1024 * 1024)).toFixed(2);
-    const quotaMB = (estimate.quota / (1024 * 1024)).toFixed(2);
-    const percent = ((estimate.usage / estimate.quota) * 100).toFixed(2);
+function atualizarContadorStorage() {
+  const contadorElement = document.getElementById('storage-counter');
+  if (!contadorElement) return;
 
-    const contadorElement = document.getElementById('storage-counter');
-    if (contadorElement) {
+  // 1. Tenta usar a API nativa (mais precisa para o QUOTA)
+  if (navigator.storage && navigator.storage.estimate) {
+    navigator.storage.estimate().then(estimate => {
+      // Usa o uso estimado pela API, mas o uso alternativo para o localStorage
+      const usageBytes = estimateLocalStorageUsage();
+      const usageMB = (usageBytes / (1024 * 1024)).toFixed(2);
+      const quotaMB = (estimate.quota / (1024 * 1024)).toFixed(2);
+      const percent = ((usageBytes / estimate.quota) * 100).toFixed(2);
+
+      if (usageBytes === 0) {
+        contadorElement.innerHTML = `
+          Armazenamento Local: Nenhum dado salvo (0.00 MB de ${quotaMB} MB)
+        `;
+      } else {
+        contadorElement.innerHTML = `
+          Armazenamento Local: ${usageMB} MB de ${quotaMB} MB (${percent}%)
+        `;
+      }
+    }).catch(error => {
+      console.warn("Erro ao usar navigator.storage.estimate. Usando fallback.", error);
+      // Fallback para a estimativa simples se a API falhar
+      const usageBytes = estimateLocalStorageUsage();
+      const usageMB = (usageBytes / (1024 * 1024)).toFixed(2);
+      // Quota padrão de 5MB (5 * 1024 * 1024 bytes)
+      const quotaMB = (5).toFixed(2); 
+      const percent = ((usageBytes / (5 * 1024 * 1024)) * 100).toFixed(2);
+
       contadorElement.innerHTML = `
-        Armazenamento Local: ${usageMB} MB de ${quotaMB} MB (${percent}%)
+        Armazenamento Local (Estimativa): ${usageMB} MB de ${quotaMB} MB (${percent}%)
       `;
-    }
-  }).catch(error => {
-    console.error("Erro ao estimar o uso de armazenamento:", error);
-  });
+    });
+  } else {
+    // 2. Fallback simples (sem API nativa)
+    const usageBytes = estimateLocalStorageUsage();
+    const usageMB = (usageBytes / (1024 * 1024)).toFixed(2);
+    const quotaMB = (5).toFixed(2); // Quota padrão de 5MB
+    const percent = ((usageBytes / (5 * 1024 * 1024)) * 100).toFixed(2);
+
+    contadorElement.innerHTML = `
+      Armazenamento Local (Estimativa): ${usageMB} MB de ${quotaMB} MB (${percent}%)
+    `;
+  }
 }
 
 // ============== BOOT / ROTAS ==============
