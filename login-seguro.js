@@ -4,16 +4,20 @@
 const usuarioSalvo = JSON.parse(localStorage.getItem("credenciais")) || null;
 
 // Se não houver credenciais salvas, o usuário será forçado a criar uma.
-if (!usuarioSalvo && location.pathname.endsWith("index.html")) {
+// A verificação de location.pathname.endsWith("index.html") foi removida para funcionar em ambientes hospedados.
+if (!usuarioSalvo) {
   document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("login-form");
-    const title = document.querySelector("h1");
+    const title = document.querySelector("h2"); // Alterado de h1 para h2 conforme index.html
     const btn = document.getElementById("btn-login");
     
     if (form && title && btn) {
       title.textContent = "Primeiro Acesso: Crie seu Login";
       btn.textContent = "Criar Login";
-      form.removeEventListener("submit", loginHandler); // Remove o listener de login
+      
+      // A função loginHandler é definida abaixo, então o listener original ainda não foi adicionado.
+      // Vamos adicionar o listener de criação diretamente.
+      form.removeEventListener("submit", loginHandler); // Remove o listener de login (se já tiver sido adicionado)
       form.addEventListener("submit", criarLoginHandler); // Adiciona o listener de criação
     }
   });
@@ -85,7 +89,10 @@ const loginHandler = async (e) => {
 };
 
 // Atualizando o listener de submit
-document.getElementById("login-form").addEventListener("submit", loginHandler);
+// Adiciona o listener de login apenas se não estiver no modo de criação de login
+if (usuarioSalvo) {
+  document.getElementById("login-form").addEventListener("submit", loginHandler);
+}
 
 async function hash(str) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
