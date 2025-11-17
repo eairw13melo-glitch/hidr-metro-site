@@ -1516,76 +1516,8 @@ function importarDados(event) {
 // ============== LOGIN ==============
 
 // Funções para o Modal de Alteração de Senha
-function abrirModalAlterarSenha() {
-  document.getElementById('modal-alterar-senha').style.display = 'block';
-  document.getElementById('senha-erro').innerText = '';
-}
-
-function fecharModalAlterarSenha() {
-  document.getElementById('modal-alterar-senha').style.display = 'none';
-  document.getElementById('form-alterar-senha').reset();
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  const form = document.getElementById('form-alterar-senha');
-  if (form) {
-    form.addEventListener('submit', function(e) {
-      e.preventDefault();
-      const novaSenha = document.getElementById('nova-senha').value;
-      const confirmarSenha = document.getElementById('confirmar-senha').value;
-      const erro = document.getElementById('senha-erro');
-
-      if (novaSenha !== confirmarSenha) {
-        erro.innerText = 'As senhas não coincidem.';
-        return;
-      }
-
-      if (novaSenha.length < 4) {
-        erro.innerText = 'A senha deve ter no mínimo 4 caracteres.';
-        return;
-      }
-
-      // Salva a nova senha no localStorage
-      localStorage.setItem('senha', novaSenha);
-      erro.innerText = 'Senha alterada com sucesso!';
-      fecharModalAlterarSenha();
-      showToast('Senha alterada com sucesso!');
-    });
-  }
-});
-
-// Define a senha padrão se não existir
-if (!localStorage.getItem('senha')) {
-  localStorage.setItem('senha', '1234'); // Senha padrão inicial
-}
-
-// Lógica de login
-function login(username, password) {
-  const senhaCorreta = localStorage.getItem('senha') || '1234';
-  if (username === "admin" && password === senhaCorreta) {
-    localStorage.setItem("logado", "true");
-    window.location.href = "dashboard.html";
-  } else {
-    return "Usuário ou senha incorretos.";
-  }
-}
-
-// Lógica de login para o login-seguro.js
-if (document.getElementById('login-form')) {
-  document.getElementById('login-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
-    const erro = document.getElementById('login-error');
-    const resultado = login(username, password);
-    if (resultado) {
-      erro.innerText = resultado;
-    }
-  });
-}
-
-// Lógica de login para o login-seguro.js (continuação)
-// ... (restante da lógica de login)
+// A lógica de login e alteração de senha foi movida para login-seguro.js para centralização.
+// Mantendo apenas as funções de utilidade para o modal.
 
 // ============== LOGIN ==============
 function resetarBlocoPerguntar() {
@@ -2055,4 +1987,96 @@ function atualizarTotais(blocoIndex) {
   
   if (totalM3El) totalM3El.textContent = totalM3.toFixed(2);
   if (totalRsEl) totalRsEl.textContent = `R$ ${totalRs.toFixed(2)}`;
+}
+
+// ============== FUNÇÕES DE EXPORTAÇÃO/IMPORTAÇÃO XLSX (BLOCO) ==============
+
+// Verifica se a biblioteca XLSX foi carregada corretamente
+function verificarXLSX() {
+  if (typeof XLSX === 'undefined') {
+    alert("Biblioteca XLSX não carregada. Verifique a conexão ou recarregue a página.");
+    return false;
+  }
+  return true;
+}
+
+// Exportação de leitura
+function exportarLeituraAtual() {
+  if (!verificarXLSX()) return;
+
+  const blocos = carregarBlocos();
+  const id = Number(new URLSearchParams(window.location.search).get("id"));
+  const bloco = blocos[id];
+  if (!bloco) {
+    alert("Bloco não encontrado.");
+    return;
+  }
+
+  const dados = bloco.leitura_atual || [];
+  const worksheetData = [
+    ["Hidrômetro Nº","Responsável","Leitura Anterior","Leitura Atual","m³","R$","Observações"],
+    ...dados.map(apt => [
+      apt.numero,
+      apt.responsavel,
+      apt.leitura_anterior,
+      apt.leitura_atual,
+      apt.total_m3,
+      `R$ ${apt.total_rs}`,
+      apt.obs
+    ])
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Leitura Atual");
+  const mes = mesAtual().replace("-", "_");
+  const nomeArquivo = `LeituraAtual_${(bloco.nome||"Bloco")}_${mes}.xlsx`.replace(/\s+/g, "_");
+  XLSX.writeFile(wb, nomeArquivo);
+}
+
+// Importação de leitura
+function importarLeituraAtual(event) {
+  if (!verificarXLSX()) return;
+  
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, { type: "array" });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+
+    const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+    const blocos = carregarBlocos();
+    const id = Number(new URLSearchParams(location.search).get("id"));
+    const bloco = blocos[id];
+    const tarifa = getTarifa(bloco);
+
+    json.forEach((row, index) => {
+      if (!bloco.leitura_atual[index]) return;
+
+      const ant = Number(row["Leitura Anterior"]) || 0;
+      const atu = Number(row["Leitura Atual"]) || 0;
+      const m3 = Math.max(0, atu - ant);
+
+      const apt = bloco.leitura_atual[index];
+      apt.numero = row["Hidrômetro Nº"] || apt.numero;
+      apt.responsavel = row["Responsável"] || "";
+      apt.leitura_anterior = ant;
+      apt.leitura_atual = atu;
+      apt.total_m3 = m3;
+      // A função calcularValorEscalonado deve estar disponível no script.js
+      apt.total_rs = calcularValorEscalonado(m3, tarifa).toFixed(2); 
+      apt.obs = row["Observações"] || "";
+    });
+
+    salvarBlocos(blocos);
+    alert("Leitura importada com sucesso!");
+    renderizarBlocoIndividual();
+  };
+
+  reader.readAsArrayBuffer(file);
 }

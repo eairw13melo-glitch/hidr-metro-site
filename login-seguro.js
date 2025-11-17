@@ -85,11 +85,4 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
   document.getElementById("btn-login").disabled = false;
 });
 
-// Função para exibir mensagens de sucesso ou erro (Toast)
-function showToast(message, isError = false) {
-  const toast = document.createElement("div");
-  toast.className = `toast ${isError ? "error" : "success"}`;
-  toast.textContent = message;
-  document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 3000); // Remove a mensagem após 3 segundos
-}
+// A função showToast foi movida para script.js para evitar duplicação.
