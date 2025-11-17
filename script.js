@@ -1308,7 +1308,124 @@ function adicionarApartamentoDireto(blocoIndex) {
 }
 
 // ============== FECHAMENTO DO MÊS ==============
-function mesAtual() {
+// ============== FECHAMENTO DO MÊS (MODIFICADO) ==============
+	
+	// Funções de Modal
+	function abrirModalSalvarHistorico() {
+	  const modal = document.getElementById('modal-salvar-historico');
+	  const mesInput = document.getElementById('mes-salvar-historico');
+	  // Define o valor padrão como o mês atual
+	  mesInput.value = mesAtual();
+	  modal.style.display = 'block';
+	}
+	
+	function fecharModalSalvarHistorico() {
+	  document.getElementById('modal-salvar-historico').style.display = 'none';
+	}
+	
+	function abrirModalImportarHistorico() {
+	  const modal = document.getElementById('modal-importar-historico');
+	  const mesInput = document.getElementById('mes-importar-historico');
+	  // Define o valor padrão como o mês atual
+	  mesInput.value = mesAtual();
+	  modal.style.display = 'block';
+	}
+	
+	function fecharModalImportarHistorico() {
+	  document.getElementById('modal-importar-historico').style.display = 'none';
+	}
+	
+	function salvarLeituraDoMesComSelecao() {
+	  const mesSelecionado = document.getElementById('mes-salvar-historico').value;
+	  if (!mesSelecionado) {
+	    alert("Por favor, selecione o mês.");
+	    return;
+	  }
+	  const id = Number(new URLSearchParams(location.search).get("id"));
+	  salvarLeituraDoMes(id, mesSelecionado);
+	}
+	
+	function importarHistoricoLeitura(event) {
+	  const file = event.target.files[0];
+	  if (!file) return;
+	
+	  const mesSelecionado = document.getElementById('mes-importar-historico').value;
+	  if (!mesSelecionado) {
+	    alert("Por favor, selecione o mês ao qual o histórico se refere.");
+	    // Limpa o input de arquivo para permitir nova seleção
+	    event.target.value = '';
+	    return;
+	  }
+	
+	  const reader = new FileReader();
+	  reader.onload = function (e) {
+	    try {
+	      const data = new Uint8Array(e.target.result);
+	      const workbook = XLSX.read(data, { type: "array" });
+	      const sheetName = workbook.SheetNames[0];
+	      const worksheet = workbook.Sheets[sheetName];
+	
+	      const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+	
+	      const blocos = carregarBlocos();
+	      const id = Number(new URLSearchParams(location.search).get("id"));
+	      const bloco = blocos[id];
+	      const tarifa = getTarifa(bloco);
+	
+	      // Validação básica do formato do arquivo
+	      if (!json.length || !json[0]["Hidrômetro Nº"]) {
+	        alert("O arquivo não parece estar no formato de leitura esperado. Verifique se as colunas estão corretas.");
+	        return;
+	      }
+	
+	      // 1. Processa os dados importados
+	      const historicoImportado = [];
+	      json.forEach((row) => {
+	        const ant = Number(row["Leitura Anterior"]) || 0;
+	        const atu = Number(row["Leitura Atual"]) || 0;
+	        const m3 = Math.max(0, atu - ant);
+	        const valorRs = calcularValorEscalonado(m3, tarifa).toFixed(2);
+	
+	        historicoImportado.push({
+	          numero: row["Hidrômetro Nº"] || "",
+	          responsavel: row["Responsável"] || "",
+	          leitura_anterior: ant,
+	          leitura_atual: atu,
+	          total_m3: m3,
+	          total_rs: valorRs,
+	          obs: row["Observações"] || ""
+	        });
+	      });
+	
+	      // 2. Salva no histórico do bloco
+	      bloco.historico = bloco.historico || {};
+	      const mesKey = mesSelecionado;
+	
+	      if (bloco.historico[mesKey]) {
+	        if (!confirm(`Já existe um histórico para o mês ${formatarMesLabel(mesKey)}. Deseja sobrescrever com os dados importados?`)) {
+	          return;
+	        }
+	      }
+	
+	      bloco.historico[mesKey] = historicoImportado;
+	      salvarBlocos(blocos);
+	      renderizarBlocoIndividual();
+	      showToast(`Histórico de ${formatarMesLabel(mesKey)} importado com sucesso!`);
+	      fecharModalImportarHistorico();
+	
+	    } catch (error) {
+	      console.error("Erro ao importar histórico:", error);
+	      alert("Erro ao processar o arquivo XLSX. Verifique se o arquivo está correto e tente novamente.");
+	    } finally {
+	      // Limpa o input de arquivo para permitir nova seleção
+	      event.target.value = '';
+	    }
+	  };
+	
+	  reader.readAsArrayBuffer(file);
+	}
+	
+	function mesAtual() {
   const hoje = new Date();
   return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
 }
@@ -1336,15 +1453,19 @@ function excluirHistorico(blocoIndex, mesKey) {
   showToast(`Histórico de ${mesLabel} excluído com sucesso!`);
 }
 
-function salvarLeituraDoMes(blocoIndex) {
+function salvarLeituraDoMes(blocoIndex, mesSelecionado) {
   const blocos = carregarBlocos();
   const bloco = blocos[blocoIndex];
   if (!bloco) { alert("Bloco não encontrado."); return; }
 
-  const base = mesAtual(); // YYYY-MM
-  let mes = base, i = 0;
+  const base = mesSelecionado || mesAtual(); // YYYY-MM
+  let mes = base;
   bloco.historico = bloco.historico || {};
-  while (bloco.historico[mes]) { i++; mes = `${base}-${String.fromCharCode(96 + i)}`; }
+  if (bloco.historico[mes]) {
+	    if (!confirm(`Já existe um histórico para o mês ${formatarMesLabel(mes)}. Deseja sobrescrever?`)) {
+	      return;
+	    }
+	  }
 
   // 1) Grava no histórico
   bloco.historico[mes] = JSON.parse(JSON.stringify(bloco.leitura_atual || []));
@@ -1386,7 +1507,8 @@ function salvarLeituraDoMes(blocoIndex) {
 
   salvarBlocos(blocos);
   renderizarBlocoIndividual();
-  alert("Leitura salva no histórico.");
+  showToast(`Leitura de ${formatarMesLabel(mes)} salva no histórico.`);
+	  fecharModalSalvarHistorico();
 }
 
 // ============== EXPORTAÇÃO / IMPORTAÇÃO ==============
