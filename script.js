@@ -386,22 +386,27 @@ function gerarRecibo(blocoIndex, mes) {
 
   // 1. Determinar a fonte de dados (leitura atual ou histórico)
   let dadosLeitura = [];
+  let tarifaParaCalculo = getTarifa(bloco); // Tarifa atual do bloco como fallback
+
   if (mes === mesAtual()) {
     dadosLeitura = bloco.leitura_atual || [];
   } else {
     const historico = bloco.historico?.[mes];
-    if (historico) {
-      dadosLeitura = historico;
+    if (historico && historico.leitura) {
+      dadosLeitura = historico.leitura;
+      // Usa a tarifa salva no histórico para o cálculo
+      if (historico.tarifaConfig) {
+        tarifaParaCalculo = historico.tarifaConfig;
+      }
     }
   }
 
   // 2. Recalcular os valores para garantir que estão corretos
   // Isso é crucial, pois o valor total_rs pode ter sido alterado ou não calculado
-  const tarifa = getTarifa(bloco);
   dadosLeitura.forEach(apt => {
     const m3 = apt.total_m3 || 0;
-    // Recalcula o valor individual com base na tarifa atual do bloco
-    apt.total_rs = calcularValorEscalonado(m3, tarifa).toFixed(2);
+    // Recalcula o valor individual com base na tarifa do mês
+    apt.total_rs = calcularValorEscalonado(m3, tarifaParaCalculo).toFixed(2);
   });
 
   // 3. Calcular o valor total do recibo (soma dos total_rs de todos os apartamentos)
@@ -1355,11 +1360,17 @@ function salvarLeituraDoMes(blocoIndex) {
   while (bloco.historico[mes]) { i++; mes = `${base}-${String.fromCharCode(96 + i)}`; }
 
   // 1) Grava no histórico
-  bloco.historico[mes] = JSON.parse(JSON.stringify(bloco.leitura_atual || []));
+  // Salva um objeto completo com a leitura e as configurações do bloco daquele mês
+  bloco.historico[mes] = {
+    leitura: JSON.parse(JSON.stringify(bloco.leitura_atual || [])),
+    contaSabesp: bloco.contaSabesp,
+    tarifaConfig: JSON.parse(JSON.stringify(bloco.tarifaConfig)),
+    boletoConfig: JSON.parse(JSON.stringify(bloco.boletoConfig))
+  };
 
   // 2) Exporta Excel (se possível)
   const fazerExport = () => {
-    const dados = bloco.historico[mes];
+    const dados = bloco.historico[mes].leitura;
     const wsData = [
       ["Hidrômetro Nº","Responsável","Leitura Anterior","Leitura Atual","m³","R$","Observações"],
       ...dados.map(apt => [
