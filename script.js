@@ -383,12 +383,38 @@ function mesPorExtenso(mes) {
 function gerarRecibo(blocoIndex, mes) {
   const blocos = carregarBlocos();
   const bloco = blocos[blocoIndex];
-  
-  if (!bloco || !bloco.historico || !bloco.historico[mes]) {
-    alert("Dados do bloco ou do mês selecionado não encontrados no histórico.");
+
+  // 1. Determinar a fonte de dados (leitura atual ou histórico)
+  let dadosLeitura = [];
+  if (mes === mesAtual()) {
+    dadosLeitura = bloco.leitura_atual || [];
+  } else {
+    const historico = bloco.historico?.[mes];
+    if (historico) {
+      dadosLeitura = historico;
+    }
+  }
+
+  // 2. Recalcular os valores para garantir que estão corretos
+  // Isso é crucial, pois o valor total_rs pode ter sido alterado ou não calculado
+  const tarifa = getTarifa(bloco);
+  dadosLeitura.forEach(apt => {
+    const m3 = apt.total_m3 || 0;
+    // Recalcula o valor individual com base na tarifa atual do bloco
+    apt.total_rs = calcularValorEscalonado(m3, tarifa).toFixed(2);
+  });
+
+  // 3. Calcular o valor total do recibo (soma dos total_rs de todos os apartamentos)
+  let valorTotal = dadosLeitura.reduce((acc, apt) => acc + (parseFloat(apt.total_rs) || 0), 0);
+
+  // 4. Se o valor total for 0 ou NaN, retorna um erro
+  if (valorTotal <= 0 || isNaN(valorTotal)) {
+    console.error("Erro na Geração do Recibo. Dados de Leitura:", dadosLeitura, "Valor Total Calculado:", valorTotal);
+    alert("Não foi possível calcular o valor total do recibo. Verifique os dados de leitura e a conta Sabesp para o mês selecionado.");
     fecharModalImpressaoRecibo();
     return;
   }
+
   
   const dadosRecibo = bloco.historico[mes];
   
