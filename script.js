@@ -198,64 +198,43 @@ function importarDadosJSON(event) {
 }
 
 // ============== CONTADOR DE ARMAZENAMENTO LOCAL ==============
+function atualizarContadorStorage() {
+  const counterEl = document.getElementById('storage-counter');
+  if (!counterEl) return;
 
-// Função alternativa para estimar o uso do localStorage (mais precisa para o nosso caso)
-function estimateLocalStorageUsage() {
-  let totalBytes = 0;
+  // 1. Estima o uso de storage em bytes (aproximado)
+  let totalUsedBytes = 0;
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     const value = localStorage.getItem(key);
-    // Estima o tamanho: 2 bytes por caractere (UTF-16) + tamanho da chave
-    totalBytes += (key.length + value.length) * 2; 
+    // 2 bytes por caractere (UTF-16)
+    totalUsedBytes += (key.length + value.length) * 2; 
   }
-  return totalBytes;
-}
 
-function atualizarContadorStorage() {
-  const contadorElement = document.getElementById('storage-counter');
-  if (!contadorElement) return;
+  const totalUsedMB = (totalUsedBytes / (1024 * 1024)).toFixed(2);
+  
+  // 2. Define o limite padrão do localStorage (5MB)
+  const quotaLimitBytes = 5 * 1024 * 1024; // 5MB
+  const quotaLimitMB = 5.00;
+  
+  const percentage = ((totalUsedBytes / quotaLimitBytes) * 100).toFixed(2);
 
-  // 1. Tenta usar a API nativa (mais precisa para o QUOTA)
+  // 3. Exibe o uso real do localStorage (totalUsedMB) em relação ao limite padrão de 5MB
+  counterEl.textContent = `Armazenamento Local: ${totalUsedMB} MB de ${quotaLimitMB} MB (Aprox. ${percentage}%)`;
+  
+  // 4. Tenta obter a quota real (experimental e pode não funcionar em todos os navegadores)
   if (navigator.storage && navigator.storage.estimate) {
     navigator.storage.estimate().then(estimate => {
-      // Usa o uso estimado pela API, mas o uso alternativo para o localStorage
-      const usageBytes = estimateLocalStorageUsage();
-      const usageMB = (usageBytes / (1024 * 1024)).toFixed(2);
-      const quotaMB = (estimate.quota / (1024 * 1024)).toFixed(2);
-      const percent = ((usageBytes / estimate.quota) * 100).toFixed(2);
-
-      if (usageBytes === 0) {
-        contadorElement.innerHTML = `
-          Armazenamento Local: Nenhum dado salvo (0.00 MB de ${quotaMB} MB)
-        `;
-      } else {
-        contadorElement.innerHTML = `
-          Armazenamento Local: ${usageMB} MB de ${quotaMB} MB (${percent}%)
-        `;
+      const totalQuotaMB = (estimate.quota / (1024 * 1024)).toFixed(2);
+      
+      // Se a estimativa for muito alta (como 144GB), é a quota persistente. 
+      // Mantemos o cálculo do localStorage, mas mostramos a quota total se for razoável.
+      if (totalQuotaMB < 1000) { // Se for menos de 1GB, usamos a estimativa
+        const usedMB = (estimate.usage / (1024 * 1024)).toFixed(2);
+        const usedPercentage = ((estimate.usage / estimate.quota) * 100).toFixed(2);
+        counterEl.textContent = `Armazenamento Local: ${usedMB} MB de ${totalQuotaMB} MB (${usedPercentage}%)`;
       }
-    }).catch(error => {
-      console.warn("Erro ao usar navigator.storage.estimate. Usando fallback.", error);
-      // Fallback para a estimativa simples se a API falhar
-      const usageBytes = estimateLocalStorageUsage();
-      const usageMB = (usageBytes / (1024 * 1024)).toFixed(2);
-      // Quota padrão de 5MB (5 * 1024 * 1024 bytes)
-      const quotaMB = (5).toFixed(2); 
-      const percent = ((usageBytes / (5 * 1024 * 1024)) * 100).toFixed(2);
-
-      contadorElement.innerHTML = `
-        Armazenamento Local (Estimativa): ${usageMB} MB de ${quotaMB} MB (${percent}%)
-      `;
     });
-  } else {
-    // 2. Fallback simples (sem API nativa)
-    const usageBytes = estimateLocalStorageUsage();
-    const usageMB = (usageBytes / (1024 * 1024)).toFixed(2);
-    const quotaMB = (5).toFixed(2); // Quota padrão de 5MB
-    const percent = ((usageBytes / (5 * 1024 * 1024)) * 100).toFixed(2);
-
-    contadorElement.innerHTML = `
-      Armazenamento Local (Estimativa): ${usageMB} MB de ${quotaMB} MB (${percent}%)
-    `;
   }
 }
 
@@ -771,10 +750,10 @@ function renderizarBlocoIndividual() {
 			        <p id="resultado-verificacao" style="font-weight: bold; margin-top: 5px;"></p>
 			      </div>
 			
-<div class="acoes">
-	        <button type="button" onclick="adicionarApartamentoDireto(${id})">+ Adicionar Apartamento</button>
-	        <button type="button" onclick="abrirModalSalvarHistorico()">💾 Salvar Leitura do Mês</button>
-	      </div>
+			      <div class="acoes">
+        <button type="button" onclick="adicionarApartamentoDireto(${id})">+ Adicionar Apartamento</button>
+        <button type="button" onclick="salvarLeituraDoMes(${id})">💾 Salvar Leitura do Mês</button>
+      </div>
 
       <h3>📌 Leitura Atual (${mesAtualLabel()})</h3>
       ${gerarTabelaLeituraAtual(bloco, id)}
@@ -1308,236 +1287,7 @@ function adicionarApartamentoDireto(blocoIndex) {
 }
 
 // ============== FECHAMENTO DO MÊS ==============
-// ============== FECHAMENTO DO MÊS (MODIFICADO) ==============
-	
-	// Funções de Modal
-function gerarListaMesesDisponiveis(bloco) {
-  const mesesSalvos = Object.keys(bloco.historico || {});
-  const hoje = new Date();
-  const anoAtual = hoje.getFullYear();
-  const mesAtualNum = hoje.getMonth() + 1; // 1 a 12
-  
-  const mesesDisponiveis = [];
-  
-  // Gera meses do ano atual até o mês atual
-  for (let i = 1; i <= mesAtualNum; i++) {
-    const mesKey = `${anoAtual}-${String(i).padStart(2, '0')}`;
-    if (!mesesSalvos.includes(mesKey)) {
-      mesesDisponiveis.push(mesKey);
-    }
-  }
-  
-  // Gera meses do ano anterior (para o caso de leituras atrasadas)
-  for (let i = 1; i <= 12; i++) {
-    const mesKey = `${anoAtual - 1}-${String(i).padStart(2, '0')}`;
-    if (!mesesSalvos.includes(mesKey)) {
-      mesesDisponiveis.push(mesKey);
-    }
-  }
-  
-  // Ordena do mais recente para o mais antigo
-  mesesDisponiveis.sort().reverse();
-  
-  return mesesDisponiveis;
-}
-
-function abrirModalSalvarHistorico() {
-  const id = Number(new URLSearchParams(location.search).get("id"));
-  const blocos = carregarBlocos();
-  const bloco = blocos[id];
-  if (!bloco) return;
-  
-  const modal = document.getElementById('modal-salvar-historico');
-  const mesSelect = document.getElementById('mes-salvar-historico');
-  
-  // Limpa opções anteriores
-  mesSelect.innerHTML = '';
-  
-  const mesesDisponiveis = gerarListaMesesDisponiveis(bloco);
-  
-  if (mesesDisponiveis.length === 0) {
-    alert("Todos os meses do ano atual e anterior já possuem histórico salvo. Se precisar sobrescrever, use a função de importação.");
-    return;
-  }
-  
-  mesesDisponiveis.forEach(mesKey => {
-    const option = document.createElement('option');
-    option.value = mesKey;
-    option.textContent = formatarMesLabel(mesKey);
-    mesSelect.appendChild(option);
-  });
-  
-  modal.style.display = 'block';
-}
-	
-	function fecharModalSalvarHistorico() {
-	  document.getElementById('modal-salvar-historico').style.display = 'none';
-	}
-	
-function abrirModalImportarHistorico() {
-  const modal = document.getElementById('modal-importar-historico');
-  const mesSelect = document.getElementById('mes-importar-historico');
-  
-  // Limpa opções anteriores
-  mesSelect.innerHTML = '';
-  
-  // Gera meses do ano atual e anterior para seleção (sem exclusão, pois o objetivo é importar)
-  const hoje = new Date();
-  const anoAtual = hoje.getFullYear();
-  
-  // Mês atual
-  let mesKey = mesAtual();
-  let option = document.createElement('option');
-  option.value = mesKey;
-  option.textContent = formatarMesLabel(mesKey) + " (Mês Atual)";
-  mesSelect.appendChild(option);
-  
-  // Meses do ano atual (anteriores ao atual)
-  for (let i = hoje.getMonth(); i >= 1; i--) {
-    mesKey = `${anoAtual}-${String(i).padStart(2, '0')}`;
-    option = document.createElement('option');
-    option.value = mesKey;
-    option.textContent = formatarMesLabel(mesKey);
-    mesSelect.appendChild(option);
-  }
-  
-  // Meses do ano anterior
-  for (let i = 12; i >= 1; i--) {
-    mesKey = `${anoAtual - 1}-${String(i).padStart(2, '0')}`;
-    option = document.createElement('option');
-    option.value = mesKey;
-    option.textContent = formatarMesLabel(mesKey);
-    mesSelect.appendChild(option);
-  }
-  
-  modal.style.display = 'block';
-}
-	
-	function fecharModalImportarHistorico() {
-	  document.getElementById('modal-importar-historico').style.display = 'none';
-	}
-	
-function salvarLeituraDoMesComSelecao() {
-  const mesSelecionado = document.getElementById('mes-salvar-historico').value;
-  if (!mesSelecionado) {
-    alert("Por favor, selecione o mês.");
-    return;
-  }
-  const id = Number(new URLSearchParams(location.search).get("id"));
-  salvarLeituraDoMes(id, mesSelecionado);
-}
-	
-	function exportarHistoricoBKP() {
-  const id = Number(new URLSearchParams(location.search).get("id"));
-  const blocos = carregarBlocos();
-  const bloco = blocos[id];
-  if (!bloco) {
-    alert("Bloco não encontrado.");
-    return;
-  }
-  
-  const historico = bloco.historico || {};
-  if (Object.keys(historico).length === 0) {
-    alert("Não há histórico de leitura para exportar.");
-    return;
-  }
-  
-  const dataStr = JSON.stringify(historico, null, 2);
-  const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-  
-  const nomeArquivo = `Historico_BKP_${(bloco.nome||"Bloco")}_${new Date().toISOString().slice(0,10)}.json`.replace(/\s+/g, "_");
-  
-  const linkElement = document.createElement('a');
-  linkElement.setAttribute('href', dataUri);
-  linkElement.setAttribute('download', nomeArquivo);
-  document.body.appendChild(linkElement);
-  linkElement.click();
-  document.body.removeChild(linkElement);
-  
-  showToast("Histórico exportado com sucesso!");
-}
-
-function importarHistoricoLeitura(event) {
-	  const file = event.target.files[0];
-	  if (!file) return;
-	
-	  const mesSelecionado = document.getElementById('mes-importar-historico').value;
-	  if (!mesSelecionado) {
-	    alert("Por favor, selecione o mês ao qual o histórico se refere.");
-	    // Limpa o input de arquivo para permitir nova seleção
-	    event.target.value = '';
-	    return;
-	  }
-	
-	  const reader = new FileReader();
-	  reader.onload = function (e) {
-	    try {
-	      const data = new Uint8Array(e.target.result);
-	      const workbook = XLSX.read(data, { type: "array" });
-	      const sheetName = workbook.SheetNames[0];
-	      const worksheet = workbook.Sheets[sheetName];
-	
-	      const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-	
-	      const blocos = carregarBlocos();
-	      const id = Number(new URLSearchParams(location.search).get("id"));
-	      const bloco = blocos[id];
-	      const tarifa = getTarifa(bloco);
-	
-	      // Validação básica do formato do arquivo
-	      if (!json.length || !json[0]["Hidrômetro Nº"]) {
-	        alert("O arquivo não parece estar no formato de leitura esperado. Verifique se as colunas estão corretas.");
-	        return;
-	      }
-	
-	      // 1. Processa os dados importados
-	      const historicoImportado = [];
-	      json.forEach((row) => {
-	        const ant = Number(row["Leitura Anterior"]) || 0;
-	        const atu = Number(row["Leitura Atual"]) || 0;
-	        const m3 = Math.max(0, atu - ant);
-	        const valorRs = calcularValorEscalonado(m3, tarifa).toFixed(2);
-	
-	        historicoImportado.push({
-	          numero: row["Hidrômetro Nº"] || "",
-	          responsavel: row["Responsável"] || "",
-	          leitura_anterior: ant,
-	          leitura_atual: atu,
-	          total_m3: m3,
-	          total_rs: valorRs,
-	          obs: row["Observações"] || ""
-	        });
-	      });
-	
-	      // 2. Salva no histórico do bloco
-	      bloco.historico = bloco.historico || {};
-	      const mesKey = mesSelecionado;
-	
-	      if (bloco.historico[mesKey]) {
-	        if (!confirm(`Já existe um histórico para o mês ${formatarMesLabel(mesKey)}. Deseja sobrescrever com os dados importados?`)) {
-	          return;
-	        }
-	      }
-	
-	      bloco.historico[mesKey] = historicoImportado;
-	      salvarBlocos(blocos);
-	      renderizarBlocoIndividual();
-	      showToast(`Histórico de ${formatarMesLabel(mesKey)} importado com sucesso!`);
-	      fecharModalImportarHistorico();
-	
-	    } catch (error) {
-	      console.error("Erro ao importar histórico:", error);
-	      alert("Erro ao processar o arquivo XLSX. Verifique se o arquivo está correto e tente novamente.");
-	    } finally {
-	      // Limpa o input de arquivo para permitir nova seleção
-	      event.target.value = '';
-	    }
-	  };
-	
-	  reader.readAsArrayBuffer(file);
-	}
-	
-	function mesAtual() {
+function mesAtual() {
   const hoje = new Date();
   return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
 }
@@ -1565,18 +1315,15 @@ function excluirHistorico(blocoIndex, mesKey) {
   showToast(`Histórico de ${mesLabel} excluído com sucesso!`);
 }
 
-function salvarLeituraDoMes(blocoIndex, mesSelecionado) {
+function salvarLeituraDoMes(blocoIndex) {
   const blocos = carregarBlocos();
   const bloco = blocos[blocoIndex];
   if (!bloco) { alert("Bloco não encontrado."); return; }
 
-  const mes = mesSelecionado; // YYYY-MM
+  const base = mesAtual(); // YYYY-MM
+  let mes = base, i = 0;
   bloco.historico = bloco.historico || {};
-  if (bloco.historico[mes]) {
-    if (!confirm(`Já existe um histórico para o mês ${formatarMesLabel(mes)}. Deseja sobrescrever?`)) {
-      return;
-    }
-  }
+  while (bloco.historico[mes]) { i++; mes = `${base}-${String.fromCharCode(96 + i)}`; }
 
   // 1) Grava no histórico
   bloco.historico[mes] = JSON.parse(JSON.stringify(bloco.leitura_atual || []));
@@ -1618,8 +1365,7 @@ function salvarLeituraDoMes(blocoIndex, mesSelecionado) {
 
   salvarBlocos(blocos);
   renderizarBlocoIndividual();
-  showToast(`Leitura de ${formatarMesLabel(mes)} salva no histórico.`);
-	  fecharModalSalvarHistorico();
+  alert("Leitura salva no histórico.");
 }
 
 // ============== EXPORTAÇÃO / IMPORTAÇÃO ==============
