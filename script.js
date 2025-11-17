@@ -1311,41 +1311,153 @@ function adicionarApartamentoDireto(blocoIndex) {
 // ============== FECHAMENTO DO MÊS (MODIFICADO) ==============
 	
 	// Funções de Modal
-	function abrirModalSalvarHistorico() {
-	  const modal = document.getElementById('modal-salvar-historico');
-	  const mesInput = document.getElementById('mes-salvar-historico');
-	  // Define o valor padrão como o mês atual
-	  mesInput.value = mesAtual();
-	  modal.style.display = 'block';
-	}
+function gerarListaMesesDisponiveis(bloco) {
+  const mesesSalvos = Object.keys(bloco.historico || {});
+  const hoje = new Date();
+  const anoAtual = hoje.getFullYear();
+  const mesAtualNum = hoje.getMonth() + 1; // 1 a 12
+  
+  const mesesDisponiveis = [];
+  
+  // Gera meses do ano atual até o mês atual
+  for (let i = 1; i <= mesAtualNum; i++) {
+    const mesKey = `${anoAtual}-${String(i).padStart(2, '0')}`;
+    if (!mesesSalvos.includes(mesKey)) {
+      mesesDisponiveis.push(mesKey);
+    }
+  }
+  
+  // Gera meses do ano anterior (para o caso de leituras atrasadas)
+  for (let i = 1; i <= 12; i++) {
+    const mesKey = `${anoAtual - 1}-${String(i).padStart(2, '0')}`;
+    if (!mesesSalvos.includes(mesKey)) {
+      mesesDisponiveis.push(mesKey);
+    }
+  }
+  
+  // Ordena do mais recente para o mais antigo
+  mesesDisponiveis.sort().reverse();
+  
+  return mesesDisponiveis;
+}
+
+function abrirModalSalvarHistorico() {
+  const id = Number(new URLSearchParams(location.search).get("id"));
+  const blocos = carregarBlocos();
+  const bloco = blocos[id];
+  if (!bloco) return;
+  
+  const modal = document.getElementById('modal-salvar-historico');
+  const mesSelect = document.getElementById('mes-salvar-historico');
+  
+  // Limpa opções anteriores
+  mesSelect.innerHTML = '';
+  
+  const mesesDisponiveis = gerarListaMesesDisponiveis(bloco);
+  
+  if (mesesDisponiveis.length === 0) {
+    alert("Todos os meses do ano atual e anterior já possuem histórico salvo. Se precisar sobrescrever, use a função de importação.");
+    return;
+  }
+  
+  mesesDisponiveis.forEach(mesKey => {
+    const option = document.createElement('option');
+    option.value = mesKey;
+    option.textContent = formatarMesLabel(mesKey);
+    mesSelect.appendChild(option);
+  });
+  
+  modal.style.display = 'block';
+}
 	
 	function fecharModalSalvarHistorico() {
 	  document.getElementById('modal-salvar-historico').style.display = 'none';
 	}
 	
-	function abrirModalImportarHistorico() {
-	  const modal = document.getElementById('modal-importar-historico');
-	  const mesInput = document.getElementById('mes-importar-historico');
-	  // Define o valor padrão como o mês atual
-	  mesInput.value = mesAtual();
-	  modal.style.display = 'block';
-	}
+function abrirModalImportarHistorico() {
+  const modal = document.getElementById('modal-importar-historico');
+  const mesSelect = document.getElementById('mes-importar-historico');
+  
+  // Limpa opções anteriores
+  mesSelect.innerHTML = '';
+  
+  // Gera meses do ano atual e anterior para seleção (sem exclusão, pois o objetivo é importar)
+  const hoje = new Date();
+  const anoAtual = hoje.getFullYear();
+  
+  // Mês atual
+  let mesKey = mesAtual();
+  let option = document.createElement('option');
+  option.value = mesKey;
+  option.textContent = formatarMesLabel(mesKey) + " (Mês Atual)";
+  mesSelect.appendChild(option);
+  
+  // Meses do ano atual (anteriores ao atual)
+  for (let i = hoje.getMonth(); i >= 1; i--) {
+    mesKey = `${anoAtual}-${String(i).padStart(2, '0')}`;
+    option = document.createElement('option');
+    option.value = mesKey;
+    option.textContent = formatarMesLabel(mesKey);
+    mesSelect.appendChild(option);
+  }
+  
+  // Meses do ano anterior
+  for (let i = 12; i >= 1; i--) {
+    mesKey = `${anoAtual - 1}-${String(i).padStart(2, '0')}`;
+    option = document.createElement('option');
+    option.value = mesKey;
+    option.textContent = formatarMesLabel(mesKey);
+    mesSelect.appendChild(option);
+  }
+  
+  modal.style.display = 'block';
+}
 	
 	function fecharModalImportarHistorico() {
 	  document.getElementById('modal-importar-historico').style.display = 'none';
 	}
 	
-	function salvarLeituraDoMesComSelecao() {
-	  const mesSelecionado = document.getElementById('mes-salvar-historico').value;
-	  if (!mesSelecionado) {
-	    alert("Por favor, selecione o mês.");
-	    return;
-	  }
-	  const id = Number(new URLSearchParams(location.search).get("id"));
-	  salvarLeituraDoMes(id, mesSelecionado);
-	}
+function salvarLeituraDoMesComSelecao() {
+  const mesSelecionado = document.getElementById('mes-salvar-historico').value;
+  if (!mesSelecionado) {
+    alert("Por favor, selecione o mês.");
+    return;
+  }
+  const id = Number(new URLSearchParams(location.search).get("id"));
+  salvarLeituraDoMes(id, mesSelecionado);
+}
 	
-	function importarHistoricoLeitura(event) {
+	function exportarHistoricoBKP() {
+  const id = Number(new URLSearchParams(location.search).get("id"));
+  const blocos = carregarBlocos();
+  const bloco = blocos[id];
+  if (!bloco) {
+    alert("Bloco não encontrado.");
+    return;
+  }
+  
+  const historico = bloco.historico || {};
+  if (Object.keys(historico).length === 0) {
+    alert("Não há histórico de leitura para exportar.");
+    return;
+  }
+  
+  const dataStr = JSON.stringify(historico, null, 2);
+  const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+  
+  const nomeArquivo = `Historico_BKP_${(bloco.nome||"Bloco")}_${new Date().toISOString().slice(0,10)}.json`.replace(/\s+/g, "_");
+  
+  const linkElement = document.createElement('a');
+  linkElement.setAttribute('href', dataUri);
+  linkElement.setAttribute('download', nomeArquivo);
+  document.body.appendChild(linkElement);
+  linkElement.click();
+  document.body.removeChild(linkElement);
+  
+  showToast("Histórico exportado com sucesso!");
+}
+
+function importarHistoricoLeitura(event) {
 	  const file = event.target.files[0];
 	  if (!file) return;
 	
