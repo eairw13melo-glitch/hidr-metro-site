@@ -2080,3 +2080,119 @@ function importarLeituraAtual(event) {
 
   reader.readAsArrayBuffer(file);
 }
+
+// ============== FUNÇÕES DE IMPORTAÇÃO DE HISTÓRICO (BLOCO) ==============
+
+function abrirModalImportarHistorico() {
+  document.getElementById('modal-importar-historico').style.display = 'block';
+  document.getElementById('import-historico-erro').textContent = '';
+  
+  // Preenche o campo de mês com o mês atual por padrão
+  const mesInput = document.getElementById('mes-referencia-historico');
+  const today = new Date();
+  const mes = String(today.getMonth() + 1).padStart(2, '0');
+  const ano = today.getFullYear();
+  mesInput.value = `${ano}-${mes}`;
+}
+
+function fecharModalImportarHistorico() {
+  document.getElementById('modal-importar-historico').style.display = 'none';
+  document.getElementById('form-importar-historico').reset();
+}
+
+// Lógica de submissão do formulário de importação de histórico
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('form-importar-historico');
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const mesReferencia = document.getElementById('mes-referencia-historico').value;
+      const arquivo = document.getElementById('arquivo-historico').files[0];
+      const erroEl = document.getElementById('import-historico-erro');
+      erroEl.textContent = '';
+
+      if (!mesReferencia || !arquivo) {
+        erroEl.textContent = 'Por favor, selecione o mês e o arquivo.';
+        return;
+      }
+      
+      importarHistorico(mesReferencia, arquivo);
+    });
+  }
+});
+
+function importarHistorico(mesReferencia, file) {
+  if (!verificarXLSX()) return;
+  
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: "array" });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+
+      const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+      
+      const id = Number(new URLSearchParams(location.search).get("id"));
+      const blocos = carregarBlocos();
+      const bloco = blocos[id];
+      
+      if (!bloco) {
+        alert("Bloco não encontrado.");
+        return;
+      }
+      
+      // 1. Validar se o histórico já existe
+      if (bloco.historico && bloco.historico[mesReferencia]) {
+        if (!confirm(`O histórico para ${mesReferencia} já existe. Deseja sobrescrever?`)) {
+          fecharModalImportarHistorico();
+          return;
+        }
+      }
+      
+      // 2. Preparar os dados para o histórico
+      const novoHistorico = [];
+      const tarifa = getTarifa(bloco);
+      
+      json.forEach((row) => {
+        // Assume que o arquivo XLSX tem as colunas necessárias para um apartamento
+        const ant = Number(row["Leitura Anterior"]) || 0;
+        const atu = Number(row["Leitura Atual"]) || 0;
+        const m3 = Math.max(0, atu - ant);
+        
+        const apt = {
+          numero: row["Hidrômetro Nº"] || "N/A",
+          responsavel: row["Responsável"] || "",
+          leitura_anterior: ant,
+          leitura_atual: atu,
+          total_m3: m3,
+          // Recalcula o valor com base na tarifa do bloco
+          total_rs: calcularValorEscalonado(m3, tarifa).toFixed(2), 
+          obs: row["Observações"] || "",
+          obs_boleto: row["Obs Boleto"] || "" // Novo campo para observação individual
+        };
+        novoHistorico.push(apt);
+      });
+      
+      // 3. Salvar no histórico do bloco
+      if (!bloco.historico) {
+        bloco.historico = {};
+      }
+      bloco.historico[mesReferencia] = novoHistorico;
+      
+      // 4. Salvar e atualizar a UI
+      salvarBlocos(blocos);
+      showToast(`Histórico de ${mesReferencia} importado com sucesso!`);
+      fecharModalImportarHistorico();
+      renderizarBlocoIndividual(); // Atualiza a visualização do bloco
+      
+    } catch (error) {
+      console.error("Erro ao importar histórico:", error);
+      document.getElementById('import-historico-erro').textContent = 'Erro ao processar o arquivo XLSX. Verifique o formato.';
+    }
+  };
+
+  reader.readAsArrayBuffer(file);
+}
