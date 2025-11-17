@@ -398,15 +398,6 @@ input.input-curto {
   margin-top: 10px;
 }
 
-.modal-content input[type="month"] {
-  margin: 10px 0;
-  padding: 10px;
-  width: 100%;
-  box-sizing: border-box;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-}
-
 .close-button {
   color: #aaa;
   float: right;
