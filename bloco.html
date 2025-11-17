@@ -22,11 +22,32 @@
       <button type="button" onclick="document.getElementById('importar-leitura-arquivo').click()">📥 Importar Leitura Atual (XLSX)</button>
       <button type="button" class="btn-danger" onclick="resetarBlocoPerguntar()">🗑️ Resetar Bloco</button>
       <button type="button" onclick="(function(){ const id=new URLSearchParams(location.search).get('id'); location.href='boletos.html?id='+encodeURIComponent(id||'0'); })()">🧾 Boletos (imprimir)</button>
+	      <button type="button" onclick="abrirModalImportarHistorico()">📥 Importar Histórico (XLSX)</button>
     </div>
   </div>
 
- <main id="bloco-detalhes" class="conteudo">
-		  </main>
+<main id="bloco-detalhes" class="conteudo">
+			  </main>
+	
+	  <!-- Modal de Importação de Histórico -->
+	  <div id="modal-importar-historico" class="modal" style="display:none;">
+	    <div class="modal-content">
+	      <span class="close-button" onclick="fecharModalImportarHistorico()">&times;</span>
+	      <h2>Importar Histórico de Leitura</h2>
+	      <p>Selecione o mês de referência e o arquivo XLSX contendo as leituras.</p>
+	      
+	      <form id="form-importar-historico">
+	        <label for="mes-referencia-historico">Mês de Referência:</label>
+	        <input type="month" id="mes-referencia-historico" required>
+	        
+	        <label for="arquivo-historico">Arquivo XLSX:</label>
+	        <input type="file" id="arquivo-historico" accept=".xlsx" required>
+	        
+	        <button type="submit">Importar Histórico</button>
+	      </form>
+	      <p id="import-historico-erro" style="color: red; margin-top: 10px;"></p>
+	    </div>
+	  </div>
 
   <!-- Modal de Captura de Foto -->
   <div id="modal-captura-foto" class="modal" style="display:none;">
