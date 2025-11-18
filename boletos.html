@@ -1,0 +1,50 @@
+<!-- 
+  Projeto: Leitura de Hidrômetro
+  Versão: v1.0.0
+  Data: 10/11/2025
+  Descrição: Página de geração e impressão de boletos.
+-->
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Boletos | Leitura de Hidrômetro</title>
+  <link rel="stylesheet" href="style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="logorecibo.png" type="image/png">
+</head>
+<body class="boletos-body">
+  <script>
+    if (localStorage.getItem("logado") !== "true") location.href = "index.html";
+  </script>
+
+  <header class="boletos-controls no-print">
+    <button class="voltar" aria-label="Voltar para o bloco anterior" onclick="history.back()">← Voltar</button>
+    <div class="ctrl-group">
+      <label for="vencimento">Vencimento:</label>
+      <input type="date" id="vencimento" />
+    </div>
+    <div class="ctrl-group">
+      <label for="origem-dados">Origem:</label>
+      <select id="origem-dados">
+        <option value="atual">Leitura Atual</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <label for="filtro-responsavel">Filtrar por responsável (opcional):</label>
+      <input type="text" id="filtro-responsavel" placeholder="Ex.: Ana" />
+    </div>
+    <button type="button" onclick="atualizarBoletos()">Atualizar</button>
+    <button type="button" onclick="window.print()">🖨️ Imprimir</button>
+  </header>
+
+  <main id="boletos-root">
+    <div style="padding:20px;color:#555">
+      Carregando boletos… se esta mensagem não sumir, verifique se o arquivo <code>script.js</code> está sendo encontrado.
+    </div>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
