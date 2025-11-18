@@ -2290,3 +2290,15 @@ function importarHistorico(mesReferencia, file) {
 
   reader.readAsArrayBuffer(file);
 }
+
+// ============== INICIALIZAÇÃO DO DASHBOARD ==============
+document.addEventListener('DOMContentLoaded', () => {
+  // Garante que a lista de blocos seja renderizada ao carregar o dashboard.html
+  if (document.getElementById('lista-blocos')) {
+    renderizarListaDeBlocos();
+  }
+  // Garante que a lista de blocos para o recibo seja populada
+  if (document.getElementById('select-bloco-recibo')) {
+    popularBlocosRecibo();
+  }
+});
