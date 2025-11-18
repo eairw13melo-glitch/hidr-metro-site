@@ -94,6 +94,105 @@ function toggleCalculadora() {
   }
 }
 
+// ============== FUNÇÕES DE EXPORTAÇÃO/IMPORTAÇÃO XLSX (bloco.html) ==============
+
+// Função auxiliar para obter o mês e ano atual no formato YYYY-MM
+function mesAtual() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+}
+
+// Verifica se a biblioteca XLSX foi carregada corretamente
+function verificarXLSX() {
+  if (typeof XLSX === 'undefined') {
+    alert("Biblioteca XLSX não carregada. Verifique a conexão ou recarregue a página.");
+    return false;
+  }
+  return true;
+}
+
+// Corrige o botão de exportação
+function exportarLeituraAtual() {
+  if (!verificarXLSX()) return;
+
+  const blocos = carregarBlocos();
+  const id = Number(new URLSearchParams(window.location.search).get("id"));
+  const bloco = blocos[id];
+  if (!bloco) {
+    alert("Bloco não encontrado.");
+    return;
+  }
+
+  const dados = bloco.leitura_atual || [];
+  const worksheetData = [
+    ["Hidrômetro Nº","Responsável","Leitura Anterior","Leitura Atual","m³","R$","Observações"],
+    ...dados.map(apt => [
+      apt.numero,
+      apt.responsavel,
+      apt.leitura_anterior,
+      apt.leitura_atual,
+      apt.total_m3,
+      `R$ ${apt.total_rs}`,
+      apt.obs
+    ])
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Leitura Atual");
+  const mes = mesAtual().replace("-", "_");
+  const nomeArquivo = `LeituraAtual_${(bloco.nome||"Bloco")}_${mes}.xlsx`.replace(/\s+/g, "_");
+  XLSX.writeFile(wb, nomeArquivo);
+}
+
+// Importação de leitura
+function importarLeituraAtual(event) {
+  if (!verificarXLSX()) return;
+  
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, { type: "array" });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+
+    const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+    const blocos = carregarBlocos();
+    const id = Number(new URLSearchParams(location.search).get("id"));
+    const bloco = blocos[id];
+    const tarifa = getTarifa(bloco);
+
+    json.forEach((row, index) => {
+      if (!bloco.leitura_atual[index]) return;
+
+      const ant = Number(row["Leitura Anterior"]) || 0;
+      const atu = Number(row["Leitura Atual"]) || 0;
+      const m3 = Math.max(0, atu - ant);
+
+      const apt = bloco.leitura_atual[index];
+      apt.numero = row["Hidrômetro Nº"] || apt.numero;
+      apt.responsavel = row["Responsável"] || "";
+      apt.leitura_anterior = ant;
+      apt.leitura_atual = atu;
+      apt.total_m3 = m3;
+      apt.total_rs = calcularValorEscalonado(m3, tarifa).toFixed(2);
+      apt.obs = row["Observações"] || "";
+    });
+
+    salvarBlocos(blocos);
+    showToast("Leitura importada com sucesso!");
+    renderizarBlocoIndividual();
+  };
+
+  reader.readAsArrayBuffer(file);
+}
+
 // ============== TARIFAS POR BLOCO ==============
 const DEFAULT_TARIFA = { minimo: 64.60, faixa_11_20: 8.94, faixa_21_50: 13.82 };
 
@@ -108,21 +207,20 @@ function setTarifa(bloco, valores) {
   };
 }
 function calcularValorEscalonado(m3, tarifa) {
-		  // A tarifa real por m³ é calculada no rateio, mas esta função usa as tarifas configuradas.
-		  // O usuário indicou que a lógica deve ser: Mínimo + (m3 - 10) * Valor_por_m3_Rateado.
-		  // No entanto, a função original usa as tarifas fixas (faixa_11_20, faixa_21_50).
-		  // Para refletir a lógica do usuário, vamos simplificar a tarifa para usar apenas a faixa_11_20 como o valor por m³ excedente.
-		  // A tarifa real de rateio será aplicada na função calcularRateioSabesp.
-		  
-		  const { minimo, faixa_11_20 } = tarifa; // Usando apenas o mínimo e a primeira faixa como tarifa excedente
-		  
-		  if (m3 <= 10) {
-		    return minimo;
-		  }
-		  
-		  // Lógica do usuário: Mínimo + (m3 - 10) * Valor_por_m3_Excedente
-		  // Usamos faixa_11_20 como o valor por m³ excedente para manter a estrutura de configuração.
-		  return minimo + (m3 - 10) * faixa_11_20;
+			  // Esta função calcula o valor base do consumo de um apartamento, usando a tarifa escalonada.
+			  // O valor final (com rateio) é ajustado em `calcularRateioSabesp`.
+			  
+			  const { minimo, faixa_11_20, faixa_21_50 } = tarifa;
+			  
+			  if (m3 <= 10) {
+			    return minimo;
+			  } else if (m3 <= 20) {
+			    // 10m³ a R$ minimo + (m3 - 10) * R$ faixa_11_20
+			    return minimo + (m3 - 10) * faixa_11_20;
+			  } else {
+			    // 10m³ a R$ minimo + 10m³ a R$ faixa_11_20 + (m3 - 20) * R$ faixa_21_50
+			    return minimo + (10 * faixa_11_20) + (m3 - 20) * faixa_21_50;
+			  }
 		}
 	
 	// Função para recalcular o valor de todos os apartamentos no bloco
@@ -281,6 +379,99 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ============== CRUD DE BLOCOS ==============
+
+// ============== FUNÇÕES DE EXPORTAÇÃO/IMPORTAÇÃO XLSX (bloco.html) ==============
+
+
+
+// Verifica se a biblioteca XLSX foi carregada corretamente
+function verificarXLSX() {
+  if (typeof XLSX === 'undefined') {
+    alert("Biblioteca XLSX não carregada. Verifique a conexão ou recarregue a página.");
+    return false;
+  }
+  return true;
+}
+
+// Corrige o botão de exportação
+function exportarLeituraAtual() {
+  if (!verificarXLSX()) return;
+
+  const blocos = carregarBlocos();
+  const id = Number(new URLSearchParams(window.location.search).get("id"));
+  const bloco = blocos[id];
+  if (!bloco) {
+    alert("Bloco não encontrado.");
+    return;
+  }
+
+  const dados = bloco.leitura_atual || [];
+  const worksheetData = [
+    ["Hidrômetro Nº","Responsável","Leitura Anterior","Leitura Atual","m³","R$","Observações"],
+    ...dados.map(apt => [
+      apt.numero,
+      apt.responsavel,
+      apt.leitura_anterior,
+      apt.leitura_atual,
+      apt.total_m3,
+      `R$ ${apt.total_rs}`,
+      apt.obs
+    ])
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Leitura Atual");
+  const mes = mesAtual().replace("-", "_");
+  const nomeArquivo = `LeituraAtual_${(bloco.nome||"Bloco")}_${mes}.xlsx`.replace(/\s+/g, "_");
+  XLSX.writeFile(wb, nomeArquivo);
+}
+
+// Importação de leitura
+function importarLeituraAtual(event) {
+  if (!verificarXLSX()) return;
+  
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, { type: "array" });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+
+    const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+    const blocos = carregarBlocos();
+    const id = Number(new URLSearchParams(location.search).get("id"));
+    const bloco = blocos[id];
+    const tarifa = getTarifa(bloco);
+
+    json.forEach((row, index) => {
+      if (!bloco.leitura_atual[index]) return;
+
+      const ant = Number(row["Leitura Anterior"]) || 0;
+      const atu = Number(row["Leitura Atual"]) || 0;
+      const m3 = Math.max(0, atu - ant);
+
+      const apt = bloco.leitura_atual[index];
+      apt.numero = row["Hidrômetro Nº"] || apt.numero;
+      apt.responsavel = row["Responsável"] || "";
+      apt.leitura_anterior = ant;
+      apt.leitura_atual = atu;
+      apt.total_m3 = m3;
+      apt.total_rs = calcularValorEscalonado(m3, tarifa).toFixed(2);
+      apt.obs = row["Observações"] || "";
+    });
+
+    salvarBlocos(blocos);
+    showToast("Leitura importada com sucesso!");
+    renderizarBlocoIndividual();
+  };
+
+  reader.readAsArrayBuffer(file);
+}
 
 // ============== IMPRESSÃO DE RECIBO (NOVO) ==============
 function abrirModalImpressaoRecibo() {
