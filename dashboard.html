@@ -1,0 +1,148 @@
+<!-- 
+  Projeto: Leitura de Hidrômetro
+  Versão: v1.0.0
+  Data: 10/11/2025
+  Descrição: Dashboard principal com lista de blocos.
+-->
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard | Leitura de Hidrômetro</title>
+  <link rel="stylesheet" href="style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="logorecibo.webp" type="image/png">
+</head>
+<body>
+  <script>
+    if (localStorage.getItem("logado") !== "true") location.href = "index.html";
+  </script>
+
+  <header class="topbar">
+    <h1>Blocos Cadastrados</h1>
+    <div class="topbar-actions">
+      <button type="button" onclick="abrirModalImpressaoRecibo()">🖨️ Imprimir Recibo</button>
+      <button type="button" onclick="criarBloco()">+ Adicionar Bloco</button>
+      <button type="button" onclick="toggleCalculadora()">🧮 Calculadora</button>
+      
+      <button type="button" onclick="exportarDadosJSON()">💾 Exportar Dados (JSON)</button>
+      <input type="file" id="import-json-input" accept=".json" onchange="importarDadosJSON(event)" style="display: none;">
+      <button type="button" onclick="acionarImportacaoJSON()">📥 Importar Dados (JSON)</button>
+		      <button type="button" onclick="gerarTemplateImportacao()">📄 Gerar Modelo Importação</button>
+      <button type="button" onclick="abrirModalAlterarSenha()">🔑 Alterar Senha</button>
+      <button type="button" class="btn-danger" onclick="logout()">Sair</button>
+      <button type="button" class="btn-danger" onclick="hardResetConfirm()">⚠️ Hard Reset</button>
+    </div>
+  </header>
+
+  <main id="blocos-container">
+    <div id="storage-counter" style="text-align: center; margin-bottom: 10px; font-size: 0.9em; color: #666;"></div>
+    <div id="calculator-container" class="calculator-container" style="display:none;">
+			      <h2>Calculadora de Conta de Água</h2>
+			      <p>Preencha os campos abaixo para calcular o valor da sua conta.</p>
+		
+			      <div class="input-group">
+			        <label for="consumo">Consumo (m³):</label>
+			        <input type="number" id="consumo" placeholder="Ex: 15" onchange="calcularValor(); atualizarTextoExplicativo();" />
+			      </div>
+		
+			      <div class="input-group">
+			        <label for="valorMinimo">Valor Mínimo (R$):</label>
+			        <input type="number" id="valorMinimo" step="0.01" value="68.40" onchange="calcularValor(); atualizarTextoExplicativo();" />
+			      </div>
+		
+			      <div class="input-group">
+			        <label for="valorM3">Valor por m³ excedente (R$):</label>
+			        <input type="number" id="valorM3" step="0.01" value="8.59" onchange="calcularValor(); atualizarTextoExplicativo();" />
+			      </div>
+		
+			      <div class="input-group">
+			        <label for="valorTotal">Total a pagar (R$):</label>
+			        <input type="text" id="valorTotal" readonly />
+			      </div>
+
+          <div id="textoExplicativo" class="result-box"></div>
+
+          <div>
+			      <a id="whatsappLink" href="#" target="_blank">
+			        <button>Enviar cálculo via WhatsApp</button>
+			      </a>
+			    </div>
+		    </div>
+    <div id="lista-blocos">
+
+    </div>
+  </main>
+  <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+  <!-- Modal de Alteração de Senha -->
+  <div id="modal-alterar-senha" class="modal" style="display:none;">
+    <div class="modal-content">
+      <span class="close-button" onclick="fecharModalAlterarSenha()">&times;</span>
+      <h2>Alterar Senha</h2>
+      <form id="form-alterar-senha">
+        <label for="nova-senha">Nova Senha:</label>
+        <input type="password" id="nova-senha" required>
+        <label for="confirmar-senha">Confirmar Nova Senha:</label>
+        <input type="password" id="confirmar-senha" required>
+        <button type="submit">Salvar Nova Senha</button>
+      </form>
+      <p id="senha-erro" style="color: red;"></p>
+    </div>
+  </div>
+
+	  <!-- Modal de Impressão de Recibo (Seleção) -->
+	  <div id="modal-impressao-recibo" class="modal" style="display:none;">
+	    <div class="modal-content">
+	      <span class="close-button" onclick="fecharModalImpressaoRecibo()">&times;</span>
+	      <h2>Imprimir Recibo por Bloco e Mês</h2>
+	      <form id="form-impressao-recibo" onsubmit="gerarReciboParaImpressao(event)">
+	        <label for="select-bloco-recibo">Selecione o Bloco:</label>
+	        <select id="select-bloco-recibo" required onchange="popularMesesRecibo()"></select>
+	        
+	        <label for="select-mes-recibo">Selecione o Mês:</label>
+	        <select id="select-mes-recibo" required></select>
+	        
+	        <button type="submit">Gerar Recibo para Impressão</button>
+	      </form>
+	    </div>
+	  </div>
+	
+	  <!-- Modal de Visualização/Impressão do Recibo -->
+	  <div id="modal-visualizacao-recibo" class="modal" style="display:none;">
+	    <div class="modal-content-recibo">
+	      <span class="close-button" onclick="fecharModalVisualizacaoRecibo()">&times;</span>
+	      
+	      <div class="recibo-container" id="reciboContainer">
+	        <div class="recibo-numero" id="reciboNumero">Recibo nº 01</div>
+	        <div class="recibo-logo">
+	          <img src="logorecibo.webp" alt="Logo" />
+	        </div>
+	        <div class="recibo-header">
+	          <span>Recibo de Pagamento</span>
+	          <span id="valorFormatado">R$ 0,00</span>
+	        </div>
+	
+	        <div class="recibo-body" id="reciboTexto"></div>
+	
+	        <div class="assinatura">
+	          <div class="recibo-footer" id="reciboData"></div>
+	          <div class="assinatura-wrapper">
+	            <img src="assinatura.webp" alt="Assinatura" class="assinatura-img" />
+	            <hr />
+	            <strong>RAFAEL WANDERLEY MELO</strong><br />
+	            <small>(15) 9 9793-9699</small>
+	          </div>
+	        </div>
+	      </div>
+	
+	      <div class="recibo-actions">
+	        <button class="print-button" onclick="imprimirRecibo()">Imprimir</button>
+	        <button class="export-pdf-button" onclick="exportarParaPDF()">Exportar para PDF</button>
+	      </div>
+	    </div>
+	  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
