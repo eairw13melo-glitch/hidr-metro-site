@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Leituras do Bloco | Leitura de Hidrômetro</title>
+  <link rel="stylesheet" href="style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="logorecibo.webp" type="image/png">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+</head>
+<body>
+  <script>
+    if (localStorage.getItem("logado") !== "true") location.href = "index.html";
+  </script>
+
+  <div class="toolbar">
+	    <button class="voltar" aria-label="Voltar para o painel" onclick="window.location.href='dashboard.html'">🔙 Voltar</button>
+	    <div class="acoes">
+	      
+      <button type="button" onclick="exportarLeituraAtual()">📤 Exportar Leitura Atual</button>
+      <input type="file" id="importar-leitura-arquivo" accept=".xlsx" style="display:none" onchange="importarLeituraAtual(event)" />
+      <button type="button" onclick="document.getElementById('importar-leitura-arquivo').click()">📥 Importar Leitura Atual (XLSX)</button>
+      <button type="button" class="btn-danger" onclick="resetarBlocoPerguntar()">🗑️ Resetar Bloco</button>
+      <button type="button" onclick="(function(){ const id=new URLSearchParams(location.search).get('id'); location.href='boletos.html?id='+encodeURIComponent(id||'0'); })()">🧾 Boletos (imprimir)</button>
+    </div>
+  </div>
+
+<main id="bloco-detalhes" class="conteudo">
+			  </main>
+	
+	  <!-- Modal de Importação de Histórico -->
+	  <div id="modal-importar-historico" class="modal" style="display:none;">
+	    <div class="modal-content">
+	      <span class="close-button" onclick="fecharModalImportarHistorico()">&times;</span>
+	      <h2>Importar Histórico de Leitura</h2>
+	      <p>Selecione o mês de referência e o arquivo XLSX contendo as leituras.</p>
+	      
+	      <form id="form-importar-historico">
+	        <label for="mes-referencia-historico">Mês de Referência:</label>
+	        <input type="month" id="mes-referencia-historico" required>
+	        
+	        <label for="arquivo-historico">Arquivo XLSX:</label>
+	        <input type="file" id="arquivo-historico" accept=".xlsx" required>
+	        
+	        <button type="submit">Importar Histórico</button>
+	      </form>
+	      <p id="import-historico-erro" style="color: red; margin-top: 10px;"></p>
+	    </div>
+	  </div>
+
+  <!-- Modal de Captura de Foto -->
+  <div id="modal-captura-foto" class="modal" style="display:none;">
+    <div class="modal-content">
+      <span class="close-button" onclick="fecharModalCapturaFoto()">&times;</span>
+      <h2>Capturar Foto do Hidrômetro</h2>
+      <p>Apartamento: <strong id="foto-apt-nome"></strong></p>
+      
+      <div id="camera-view">
+        <video id="video-stream" width="320" height="240" autoplay></video>
+        <button onclick="capturarFoto()">Tirar Foto</button>
+      </div>
+      
+      <div id="upload-view" style="display:none;">
+        <input type="file" accept="image/*" onchange="uploadFoto(event)">
+      </div>
+
+      <canvas id="canvas-foto" width="320" height="240" style="display:none;"></canvas>
+      <img id="foto-preview" src="" alt="Prévia da Foto" style="display:none; max-width: 100%; height: auto;">
+      
+      <div class="modal-actions">
+        <button onclick="salvarFoto()">Salvar Foto</button>
+        <button onclick="alternarModoCaptura()">Alternar para Upload</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
