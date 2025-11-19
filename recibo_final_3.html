@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Gerador de Recibo</title>
+  <style>
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f9;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  flex-direction: column; /* Alinha o conteúdo no centro da página */
+}
+
+h1 {
+  text-align: center;
+  width: 100%;
+  margin-bottom: 20px; /* Pequeno espaçamento entre o título e o formulário */
+}
+
+.form-container {
+  max-width: 500px;
+  background: #fff;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Centraliza o conteúdo dentro do formulário */
+}
+
+.form-container label {
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 5px;
+  display: block;
+  width: 100%;
+  text-align: left;
+}
+
+.form-container input,
+.form-container select {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  box-sizing: border-box;
+}
+
+.form-container input[type="date"] {
+  width: 100%;
+}
+
+.form-container button {
+  width: 48%;
+  padding: 12px;
+  font-size: 16px;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  margin-top: 10px;
+  cursor: pointer;
+  display: inline-block; /* Para os botões ficarem lado a lado */
+}
+
+.gerar-button {
+  background-color: #4CAF50;
+}
+
+.limpar-button {
+  background-color: #f44336;
+}
+
+.recibo-container {
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 30px;
+  margin-top: 30px;
+  max-width: 700px;
+  background-color: #fff;
+  display: none;
+  position: relative;
+  width: 100%;
+  text-align: center; /* Centraliza o conteúdo do recibo */
+}
+
+.recibo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+  margin-bottom: 30px;
+}
+
+.recibo-body {
+  font-size: 16px;
+  line-height: 1.6;
+  text-align: justify;
+}
+
+.recibo-body strong {
+  font-weight: bold;
+}
+
+.assinatura {
+  margin-top: 60px;
+  text-align: center;
+  position: relative;
+  height: 140px;
+}
+
+.assinatura-wrapper {
+  display: inline-block;
+  position: relative;
+  width: 300px;
+}
+
+.assinatura-wrapper hr {
+  margin-top: 20px;
+  margin-bottom: 5px;
+  border: none;
+  border-top: 1px solid #000;
+}
+
+.assinatura-img {
+  position: absolute;
+  top: -55px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 155px;
+  height: auto;
+  opacity: 0.95;
+}
+
+.recibo-footer {
+  text-align: right;
+  margin-top: 30px;
+  font-size: 15px;
+}
+
+.print-button {
+  background-color: #2196F3;
+}
+
+.recibo-logo {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.recibo-logo img {
+  max-width: 150px;
+  height: auto;
+}
+
+.recibo-numero {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-weight: bold;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .recibo-container, .recibo-container * {
+    visibility: visible;
+  }
+
+  .recibo-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  .print-button, .limpar-button {
+    display: none;
+  }
+}
+
+  </style>
+</head>
+<body>
+
+<h1>Gerador de Recibo</h1>
+
+<div class="form-container">
+  <label for="valor">Valor (R$)</label>
+  <input type="number" id="valor" placeholder="200,00" />
+
+  <label for="pagador">Pagador</label>
+  <select id="pagador">
+    <option value="Condomínio Nova Esperança - Bloco 2058">Condomínio Nova Esperança - Bloco 2058</option>
+    <option value="Condomínio Vitória - Bloco 2060">Condomínio Vitória - Bloco 2060</option>
+	<option value="Condomínio Primavera - Bloco 1938">Condomínio Primavera - Bloco 1938</option>
+	<option value="Bloco 1940">Bloco 1940</option>
+    <option value="Bloco 1968">Bloco 1968</option>
+    <option value="Bloco 1970">Bloco 1970</option>
+    
+  </select>
+
+  <label for="referente">Referente</label>
+  <select id="referente">
+    <option value="Leitura referente ao mês de abril de 2025">Leitura referente ao mês de abril de 2025</option>
+    <option value="Leitura referente ao mês de maio de 2025">Leitura referente ao mês de maio de 2025</option>
+    <option value="Leitura referente ao mês de junho de 2025">Leitura referente ao mês de junho de 2025</option>
+    <option value="Leitura referente ao mês de julho de 2025">Leitura referente ao mês de julho de 2025</option>
+    <option value="Leitura referente ao mês de agosto de 2025">Leitura referente ao mês de agosto de 2025</option>
+    <option value="Leitura referente ao mês de setembro de 2025">Leitura referente ao mês de setembro de 2025</option>
+    <option value="Leitura referente ao mês de outubro de 2025">Leitura referente ao mês de outubro de 2025</option>
+    <option value="Leitura referente ao mês de novembro de 2025">Leitura referente ao mês de novembro de 2025</option>
+    <option value="Leitura referente ao mês de dezembro de 2025">Leitura referente ao mês de dezembro de 2025</option>
+  </select>
+
+  <label for="data">Data de Pagamento</label>
+  <input type="date" id="data" value="2025-05-02" />
+
+  <label for="formaPagamento">Forma de Pagamento</label>
+  <select id="formaPagamento">
+    <option value="Dinheiro">Dinheiro</option>
+    <option value="Pix">Pix</option>
+    <option value="Cheque">Cheque</option>
+    <option value="Transferência/Depósito">Transferência/Depósito</option>
+    <option value="Cartão de Crédito/Débito">Cartão de Crédito/Débito</option>
+    <option value="Boleto">Boleto</option>
+  </select>
+
+  <button class="gerar-button" onclick="gerarRecibo()">Gerar Recibo</button>
+  <button class="limpar-button" onclick="limparTudo()">Limpar</button>
+</div>
+
+<div class="recibo-container" id="reciboContainer">
+  <div class="recibo-numero" id="reciboNumero"></div>
+  <div class="recibo-logo">
+    <img src="logorecibo.png" alt="Logo" />
+  </div>
+  <div class="recibo-header">
+    <span>Recibo de Pagamento</span>
+    <span id="valorFormatado" style="border: 1px solid #333; padding: 5px 10px; border-radius: 5px;"></span>
+  </div>
+
+  <div class="recibo-body" id="reciboTexto"></div>
+
+  <div class="recibo-footer" id="reciboData"></div>
+
+  <div class="assinatura">
+    <div class="assinatura-wrapper">
+      <img src="assinatura.png" alt="Assinatura" class="assinatura-img" />
+      <hr />
+      <strong>RAFAEL WANDERLEY MELO</strong><br />
+      <small>(15) 9 9793-9699</small>
+    </div>
+  </div>
+
+  <button class="print-button" onclick="window.print()">Imprimir</button>
+</div>
+
+<script>
+  function gerarRecibo() {
+    const valorInput = document.getElementById("valor").value;
+    const valorNum = parseFloat(valorInput);
+    const valorFormatado = valorNum.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+    const pagador = document.getElementById("pagador").value;
+    const referente = document.getElementById("referente").value;
+    const dataInput = document.getElementById("data").value;
+
+    const [ano, mes, dia] = dataInput.split("-");
+    const data = new Date(ano, mes - 1, dia);
+
+    const cidade = "Itapetininga";
+    const dataFormatada = `${cidade}, ${parseInt(dia)} de ${mesPorExtenso(data.getMonth())} de ${ano}`;
+
+    document.getElementById("valorFormatado").innerText = valorFormatado;
+
+    document.getElementById("reciboTexto").innerHTML = `
+      Recebi(emos) de <strong>${pagador}</strong>, a importância de <strong>${valorFormatado}</strong>,
+      referente à <strong>${referente}</strong>.
+      <br><br>
+      Para maior clareza, firmo(amos) o presente recibo, que comprova o recebimento integral do valor mencionado, concedendo
+      <strong>quitação plena, geral e irrevogável</strong> pela quantia recebida.
+    `;
+
+    document.getElementById("reciboData").innerText = dataFormatada;
+
+    const numeroRecibo = String(data.getMonth() + 1).padStart(2, "0");
+    document.getElementById("reciboNumero").innerText = `Recibo nº ${numeroRecibo}`;
+
+    document.getElementById("reciboContainer").style.display = "block";
+  }
+
+  function mesPorExtenso(mes) {
+    const meses = [
+      "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+      "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"
+    ];
+    return meses[mes];
+  }
+
+  function limparTudo() {
+    document.getElementById("valor").value = "";
+    document.getElementById("pagador").selectedIndex = 0;
+    document.getElementById("referente").selectedIndex = 0;
+    document.getElementById("data").value = "";
+    document.getElementById("formaPagamento").selectedIndex = 0;
+    document.getElementById("reciboContainer").style.display = "none";
+  }
+</script>
+
+</body>
+</html>
