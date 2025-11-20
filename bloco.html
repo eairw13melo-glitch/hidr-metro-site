@@ -17,6 +17,170 @@
       alert("Biblioteca XLSX não carregada. Verifique a conexão ou recarregue a página.");
     }
 
+    // ============== FUNÇÕES AUXILIARES (NECESSÁRIAS PARA OS MODAIS) ==============
+    
+    function carregarBlocos() {
+      return JSON.parse(localStorage.getItem("blocos")) || [];
+    }
+    
+    function salvarBlocos(blocos) {
+      localStorage.setItem("blocos", JSON.stringify(blocos));
+    }
+    
+    function mesAtual() {
+      const hoje = new Date();
+      return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
+    }
+    
+    function formatarMesLabel(mes) {
+      const [ano, numeroMes] = mes.split("-");
+      const date = new Date(`${ano}-${(numeroMes || "01")}-01`);
+      return date.toLocaleString("pt-BR", { month: "long", year: "numeric" });
+    }
+    
+    function showToast(message, isError = false) {
+      const toast = document.createElement("div");
+      toast.className = `toast ${isError ? "error" : "success"}`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    // ============== FUNÇÕES DOS MODAIS (AGORA NO ESCOPO GLOBAL) ==============
+    
+    function abrirModalSalvarHistorico() {
+      const modal = document.getElementById('modal-salvar-historico');
+      const mesInput = document.getElementById('mes-salvar-historico');
+      // Define o valor padrão como o mês atual
+      mesInput.value = mesAtual();
+      modal.style.display = 'block';
+    }
+    
+    function fecharModalSalvarHistorico() {
+      document.getElementById('modal-salvar-historico').style.display = 'none';
+    }
+    
+    function abrirModalImportarHistorico() {
+      const modal = document.getElementById('modal-importar-historico');
+      const mesInput = document.getElementById('mes-importar-historico');
+      // Define o valor padrão como o mês atual
+      mesInput.value = mesAtual();
+      modal.style.display = 'block';
+    }
+    
+    function fecharModalImportarHistorico() {
+      document.getElementById('modal-importar-historico').style.display = 'none';
+    }
+    
+    function salvarLeituraDoMesComSelecao() {
+      const mesSelecionado = document.getElementById('mes-salvar-historico').value;
+      if (!mesSelecionado) {
+        alert("Por favor, selecione o mês.");
+        return;
+      }
+      const id = Number(new URLSearchParams(location.search).get("id"));
+      // Chama a função principal que está no script.js
+      if (typeof salvarLeituraDoMes === 'function') {
+        salvarLeituraDoMes(id, mesSelecionado);
+      } else {
+        alert("Erro: função salvarLeituraDoMes não encontrada. Verifique se o script.js foi carregado.");
+      }
+    }
+    
+    function importarHistoricoLeitura(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+    
+      const mesSelecionado = document.getElementById('mes-importar-historico').value;
+      if (!mesSelecionado) {
+        alert("Por favor, selecione o mês ao qual o histórico se refere.");
+        event.target.value = '';
+        return;
+      }
+    
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: "array" });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+    
+          const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+    
+          const blocos = carregarBlocos();
+          const id = Number(new URLSearchParams(location.search).get("id"));
+          const bloco = blocos[id];
+          
+          // Busca a função getTarifa do script.js
+          const tarifa = (typeof getTarifa === 'function') ? getTarifa(bloco) : { minimo: 64.60, faixa_11_20: 8.94, faixa_21_50: 13.82 };
+    
+          // Validação básica do formato do arquivo
+          if (!json.length || !json[0]["Hidrômetro Nº"]) {
+            alert("O arquivo não parece estar no formato de leitura esperado. Verifique se as colunas estão corretas.");
+            return;
+          }
+    
+          // Busca a função calcularValorEscalonado do script.js
+          const calcularValor = (typeof calcularValorEscalonado === 'function') ? calcularValorEscalonado : function(m3, tarifa) {
+            const { minimo, faixa_11_20 } = tarifa;
+            if (m3 <= 10) return minimo;
+            return minimo + (m3 - 10) * faixa_11_20;
+          };
+          
+          // 1. Processa os dados importados
+          const historicoImportado = [];
+          json.forEach((row) => {
+            const ant = Number(row["Leitura Anterior"]) || 0;
+            const atu = Number(row["Leitura Atual"]) || 0;
+            const m3 = Math.max(0, atu - ant);
+            const valorRs = calcularValor(m3, tarifa).toFixed(2);
+    
+            historicoImportado.push({
+              numero: row["Hidrômetro Nº"] || "",
+              responsavel: row["Responsável"] || "",
+              leitura_anterior: ant,
+              leitura_atual: atu,
+              total_m3: m3,
+              total_rs: valorRs,
+              obs: row["Observações"] || ""
+            });
+          });
+    
+          // 2. Salva no histórico do bloco
+          bloco.historico = bloco.historico || {};
+          const mesKey = mesSelecionado;
+    
+          if (bloco.historico[mesKey]) {
+            if (!confirm(`Já existe um histórico para o mês ${formatarMesLabel(mesKey)}. Deseja sobrescrever com os dados importados?`)) {
+              return;
+            }
+          }
+    
+          bloco.historico[mesKey] = historicoImportado;
+          salvarBlocos(blocos);
+          
+          // Chama renderizarBlocoIndividual se existir
+          if (typeof renderizarBlocoIndividual === 'function') {
+            renderizarBlocoIndividual();
+          }
+          
+          showToast(`Histórico de ${formatarMesLabel(mesKey)} importado com sucesso!`);
+          fecharModalImportarHistorico();
+    
+        } catch (error) {
+          console.error("Erro ao importar histórico:", error);
+          alert("Erro ao processar o arquivo XLSX. Verifique se o arquivo está correto e tente novamente.");
+        } finally {
+          event.target.value = '';
+        }
+      };
+    
+      reader.readAsArrayBuffer(file);
+    }
+
+    // ============== EXPORTAÇÃO E IMPORTAÇÃO DE LEITURA ATUAL ==============
+    
     // Corrige o botão de exportação
     function exportarLeituraAtual() {
       if (typeof XLSX === 'undefined') {
@@ -71,7 +235,16 @@
         const blocos = carregarBlocos();
         const id = Number(new URLSearchParams(location.search).get("id"));
         const bloco = blocos[id];
-        const tarifa = getTarifa(bloco);
+        
+        // Busca a função getTarifa do script.js
+        const tarifa = (typeof getTarifa === 'function') ? getTarifa(bloco) : { minimo: 64.60, faixa_11_20: 8.94, faixa_21_50: 13.82 };
+        
+        // Busca a função calcularValorEscalonado do script.js
+        const calcularValor = (typeof calcularValorEscalonado === 'function') ? calcularValorEscalonado : function(m3, tarifa) {
+          const { minimo, faixa_11_20 } = tarifa;
+          if (m3 <= 10) return minimo;
+          return minimo + (m3 - 10) * faixa_11_20;
+        };
 
         json.forEach((row, index) => {
           if (!bloco.leitura_atual[index]) return;
@@ -86,13 +259,17 @@
           apt.leitura_anterior = ant;
           apt.leitura_atual = atu;
           apt.total_m3 = m3;
-          apt.total_rs = calcularValorEscalonado(m3, tarifa).toFixed(2);
+          apt.total_rs = calcularValor(m3, tarifa).toFixed(2);
           apt.obs = row["Observações"] || "";
         });
 
         salvarBlocos(blocos);
         alert("Leitura importada com sucesso!");
-        renderizarBlocoIndividual();
+        
+        // Chama renderizarBlocoIndividual se existir
+        if (typeof renderizarBlocoIndividual === 'function') {
+          renderizarBlocoIndividual();
+        }
       };
 
       reader.readAsArrayBuffer(file);
