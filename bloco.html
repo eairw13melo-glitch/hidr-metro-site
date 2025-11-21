@@ -7,17 +7,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="logorecibo.png" type="image/png">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
-</head>
-<body>
+  
+  <!-- SCRIPT CORRIGIDO: Todas as funções necessárias agora estão aqui -->
   <script>
+    // Proteção de login
     if (localStorage.getItem("logado") !== "true") location.href = "index.html";
 
-    // Verifica se a biblioteca XLSX foi carregada corretamente
+    // Verifica biblioteca XLSX
     if (typeof XLSX === 'undefined') {
       alert("Biblioteca XLSX não carregada. Verifique a conexão ou recarregue a página.");
     }
 
-    // ============== FUNÇÕES AUXILIARES (NECESSÁRIAS PARA OS MODAIS) ==============
+    // ==================== FUNÇÕES AUXILIARES ====================
     
     function carregarBlocos() {
       return JSON.parse(localStorage.getItem("blocos")) || [];
@@ -45,13 +46,22 @@
       document.body.appendChild(toast);
       setTimeout(() => toast.remove(), 3000);
     }
+    
+    function getTarifa(bloco) {
+      return bloco.tarifaConfig || { minimo: 64.60, faixa_11_20: 8.94, faixa_21_50: 13.82 };
+    }
+    
+    function calcularValorEscalonado(m3, tarifa) {
+      const { minimo, faixa_11_20 } = tarifa;
+      if (m3 <= 10) return minimo;
+      return minimo + (m3 - 10) * faixa_11_20;
+    }
 
-    // ============== FUNÇÕES DOS MODAIS (AGORA NO ESCOPO GLOBAL) ==============
+    // ==================== FUNÇÕES DOS MODAIS ====================
     
     function abrirModalSalvarHistorico() {
       const modal = document.getElementById('modal-salvar-historico');
       const mesInput = document.getElementById('mes-salvar-historico');
-      // Define o valor padrão como o mês atual
       mesInput.value = mesAtual();
       modal.style.display = 'block';
     }
@@ -63,7 +73,6 @@
     function abrirModalImportarHistorico() {
       const modal = document.getElementById('modal-importar-historico');
       const mesInput = document.getElementById('mes-importar-historico');
-      // Define o valor padrão como o mês atual
       mesInput.value = mesAtual();
       modal.style.display = 'block';
     }
@@ -79,25 +88,90 @@
         return;
       }
       const id = Number(new URLSearchParams(location.search).get("id"));
-      // Chama a função principal que está no script.js
-      if (typeof salvarLeituraDoMes === 'function') {
-        salvarLeituraDoMes(id, mesSelecionado);
-      } else {
-        alert("Erro: função salvarLeituraDoMes não encontrada. Verifique se o script.js foi carregado.");
+      salvarLeituraDoMes(id, mesSelecionado);
+    }
+    
+    function salvarLeituraDoMes(blocoIndex, mesSelecionado) {
+      const blocos = carregarBlocos();
+      const bloco = blocos[blocoIndex];
+      if (!bloco) { 
+        alert("Bloco não encontrado."); 
+        return; 
       }
+
+      const mes = mesSelecionado;
+      bloco.historico = bloco.historico || {};
+      
+      if (bloco.historico[mes]) {
+        if (!confirm(`Já existe um histórico para o mês ${formatarMesLabel(mes)}. Deseja sobrescrever?`)) {
+          return;
+        }
+      }
+
+      // 1) Grava no histórico
+      bloco.historico[mes] = JSON.parse(JSON.stringify(bloco.leitura_atual || []));
+
+      // 2) Exporta Excel
+      const fazerExport = () => {
+        const dados = bloco.historico[mes];
+        const wsData = [
+          ["Hidrômetro Nº","Responsável","Leitura Anterior","Leitura Atual","m³","R$","Observações"],
+          ...dados.map(apt => [
+            apt.numero, apt.responsavel, apt.leitura_anterior, apt.leitura_atual, apt.total_m3, `R$ ${apt.total_rs}`, apt.obs
+          ])
+        ];
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Leitura");
+        const nomeArquivo = `Leitura_${(bloco.nome||"Bloco")}_${mes}.xlsx`.replace(/\s+/g, "_");
+        XLSX.writeFile(wb, nomeArquivo);
+      };
+
+      if (window.XLSX) {
+        try { 
+          fazerExport(); 
+        } catch (e) { 
+          console.error(e); 
+          alert("Falha ao exportar Excel, mas o histórico foi salvo."); 
+        }
+      } else {
+        alert("Histórico salvo. Para exportar Excel, verifique a conexão e recarregue a página.");
+      }
+
+      // 3) Prepara próxima rodada
+      bloco.leitura_atual = (bloco.leitura_atual || []).map(apt => ({
+        numero: apt.numero,
+        responsavel: apt.responsavel,
+        leitura_anterior: apt.leitura_atual,
+        leitura_atual: 0,
+        total_m3: 0,
+        total_rs: 0,
+        obs: "",
+        total_rs_base: 0
+      }));
+
+      salvarBlocos(blocos);
+      
+      // Chama renderizarBlocoIndividual se existir (será carregada do script.js)
+      if (typeof renderizarBlocoIndividual === 'function') {
+        renderizarBlocoIndividual();
+      }
+      
+      showToast(`Leitura de ${formatarMesLabel(mes)} salva no histórico.`);
+      fecharModalSalvarHistorico();
     }
     
     function importarHistoricoLeitura(event) {
       const file = event.target.files[0];
       if (!file) return;
-    
+
       const mesSelecionado = document.getElementById('mes-importar-historico').value;
       if (!mesSelecionado) {
         alert("Por favor, selecione o mês ao qual o histórico se refere.");
         event.target.value = '';
         return;
       }
-    
+
       const reader = new FileReader();
       reader.onload = function (e) {
         try {
@@ -105,37 +179,28 @@
           const workbook = XLSX.read(data, { type: "array" });
           const sheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[sheetName];
-    
+
           const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-    
+
           const blocos = carregarBlocos();
           const id = Number(new URLSearchParams(location.search).get("id"));
           const bloco = blocos[id];
-          
-          // Busca a função getTarifa do script.js
-          const tarifa = (typeof getTarifa === 'function') ? getTarifa(bloco) : { minimo: 64.60, faixa_11_20: 8.94, faixa_21_50: 13.82 };
-    
-          // Validação básica do formato do arquivo
+          const tarifa = getTarifa(bloco);
+
+          // Validação
           if (!json.length || !json[0]["Hidrômetro Nº"]) {
-            alert("O arquivo não parece estar no formato de leitura esperado. Verifique se as colunas estão corretas.");
+            alert("O arquivo não parece estar no formato de leitura esperado.");
             return;
           }
-    
-          // Busca a função calcularValorEscalonado do script.js
-          const calcularValor = (typeof calcularValorEscalonado === 'function') ? calcularValorEscalonado : function(m3, tarifa) {
-            const { minimo, faixa_11_20 } = tarifa;
-            if (m3 <= 10) return minimo;
-            return minimo + (m3 - 10) * faixa_11_20;
-          };
-          
-          // 1. Processa os dados importados
+
+          // Processa dados
           const historicoImportado = [];
           json.forEach((row) => {
             const ant = Number(row["Leitura Anterior"]) || 0;
             const atu = Number(row["Leitura Atual"]) || 0;
             const m3 = Math.max(0, atu - ant);
-            const valorRs = calcularValor(m3, tarifa).toFixed(2);
-    
+            const valorRs = calcularValorEscalonado(m3, tarifa).toFixed(2);
+
             historicoImportado.push({
               numero: row["Hidrômetro Nº"] || "",
               responsavel: row["Responsável"] || "",
@@ -146,17 +211,17 @@
               obs: row["Observações"] || ""
             });
           });
-    
-          // 2. Salva no histórico do bloco
+
+          // Salva no histórico
           bloco.historico = bloco.historico || {};
           const mesKey = mesSelecionado;
-    
+
           if (bloco.historico[mesKey]) {
-            if (!confirm(`Já existe um histórico para o mês ${formatarMesLabel(mesKey)}. Deseja sobrescrever com os dados importados?`)) {
+            if (!confirm(`Já existe um histórico para o mês ${formatarMesLabel(mesKey)}. Deseja sobrescrever?`)) {
               return;
             }
           }
-    
+
           bloco.historico[mesKey] = historicoImportado;
           salvarBlocos(blocos);
           
@@ -167,21 +232,20 @@
           
           showToast(`Histórico de ${formatarMesLabel(mesKey)} importado com sucesso!`);
           fecharModalImportarHistorico();
-    
+
         } catch (error) {
           console.error("Erro ao importar histórico:", error);
-          alert("Erro ao processar o arquivo XLSX. Verifique se o arquivo está correto e tente novamente.");
+          alert("Erro ao processar o arquivo XLSX. Verifique se o arquivo está correto.");
         } finally {
           event.target.value = '';
         }
       };
-    
+
       reader.readAsArrayBuffer(file);
     }
 
-    // ============== EXPORTAÇÃO E IMPORTAÇÃO DE LEITURA ATUAL ==============
+    // ==================== EXPORTAÇÃO/IMPORTAÇÃO LEITURA ATUAL ====================
     
-    // Corrige o botão de exportação
     function exportarLeituraAtual() {
       if (typeof XLSX === 'undefined') {
         alert("Biblioteca XLSX não carregada.");
@@ -218,7 +282,6 @@
       XLSX.writeFile(wb, nomeArquivo);
     }
 
-    // Importação de leitura
     function importarLeituraAtual(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -235,16 +298,7 @@
         const blocos = carregarBlocos();
         const id = Number(new URLSearchParams(location.search).get("id"));
         const bloco = blocos[id];
-        
-        // Busca a função getTarifa do script.js
-        const tarifa = (typeof getTarifa === 'function') ? getTarifa(bloco) : { minimo: 64.60, faixa_11_20: 8.94, faixa_21_50: 13.82 };
-        
-        // Busca a função calcularValorEscalonado do script.js
-        const calcularValor = (typeof calcularValorEscalonado === 'function') ? calcularValorEscalonado : function(m3, tarifa) {
-          const { minimo, faixa_11_20 } = tarifa;
-          if (m3 <= 10) return minimo;
-          return minimo + (m3 - 10) * faixa_11_20;
-        };
+        const tarifa = getTarifa(bloco);
 
         json.forEach((row, index) => {
           if (!bloco.leitura_atual[index]) return;
@@ -259,7 +313,7 @@
           apt.leitura_anterior = ant;
           apt.leitura_atual = atu;
           apt.total_m3 = m3;
-          apt.total_rs = calcularValor(m3, tarifa).toFixed(2);
+          apt.total_rs = calcularValorEscalonado(m3, tarifa).toFixed(2);
           apt.obs = row["Observações"] || "";
         });
 
@@ -275,46 +329,46 @@
       reader.readAsArrayBuffer(file);
     }
   </script>
-
+</head>
+<body>
   <div class="toolbar">
-	    <button class="voltar" aria-label="Voltar para o painel" onclick="window.location.href='dashboard.html'">🔙 Voltar</button>
-	    <div class="acoes">
-	      
+    <button class="voltar" aria-label="Voltar para o painel" onclick="window.location.href='dashboard.html'">🔙 Voltar</button>
+    <div class="acoes">
       <button type="button" onclick="exportarLeituraAtual()">📤 Exportar Leitura Atual</button>
       <input type="file" id="importar-leitura-arquivo" accept=".xlsx" style="display:none" onchange="importarLeituraAtual(event)" />
       <button type="button" onclick="document.getElementById('importar-leitura-arquivo').click()">📥 Importar Leitura Atual (XLSX)</button>
       <button type="button" class="btn-danger" onclick="resetarBlocoPerguntar()">🗑️ Resetar Bloco</button>
       <button type="button" onclick="(function(){ const id=new URLSearchParams(location.search).get('id'); location.href='boletos.html?id='+encodeURIComponent(id||'0'); })()">🧾 Boletos (imprimir)</button>
-	      <button type="button" onclick="abrirModalSalvarHistorico()">💾 Salvar Leitura do Mês</button>
-	      <button type="button" onclick="abrirModalImportarHistorico()">📥 Importar Histórico (XLSX)</button>
+      <button type="button" onclick="abrirModalSalvarHistorico()">💾 Salvar Leitura do Mês</button>
+      <button type="button" onclick="abrirModalImportarHistorico()">📥 Importar Histórico (XLSX)</button>
     </div>
   </div>
 
- <main id="bloco-detalhes" class="conteudo">
-	    <!-- Modal de Salvar Histórico -->
-	    <div id="modal-salvar-historico" class="modal" style="display:none;">
-	      <div class="modal-content">
-	        <span class="close-button" onclick="fecharModalSalvarHistorico()">&times;</span>
-	        <h2>Salvar Leitura no Histórico</h2>
-	        <p>Selecione o mês ao qual esta leitura se refere:</p>
-	        <input type="month" id="mes-salvar-historico" required>
-	        <button onclick="salvarLeituraDoMesComSelecao()">Salvar Leitura</button>
-	      </div>
-	    </div>
-	
-	    <!-- Modal de Importar Histórico -->
-	    <div id="modal-importar-historico" class="modal" style="display:none;">
-	      <div class="modal-content">
-	        <span class="close-button" onclick="fecharModalImportarHistorico()">&times;</span>
-	        <h2>Importar Histórico de Leitura</h2>
-	        <p>Selecione o mês ao qual o arquivo de histórico se refere:</p>
-	        <input type="month" id="mes-importar-historico" required>
-	        <input type="file" id="importar-historico-arquivo" accept=".xlsx" onchange="importarHistoricoLeitura(event)" style="display:none;" />
-	        <button onclick="document.getElementById('importar-historico-arquivo').click()">Selecionar Arquivo XLSX</button>
-	        <p style="margin-top: 10px;">* O arquivo deve seguir o formato de exportação de leitura.</p>
-	      </div>
-	    </div>
-		  </main>
+  <main id="bloco-detalhes" class="conteudo">
+    <!-- Modal de Salvar Histórico -->
+    <div id="modal-salvar-historico" class="modal" style="display:none;">
+      <div class="modal-content">
+        <span class="close-button" onclick="fecharModalSalvarHistorico()">&times;</span>
+        <h2>Salvar Leitura no Histórico</h2>
+        <p>Selecione o mês ao qual esta leitura se refere:</p>
+        <input type="month" id="mes-salvar-historico" required>
+        <button onclick="salvarLeituraDoMesComSelecao()">Salvar Leitura</button>
+      </div>
+    </div>
+
+    <!-- Modal de Importar Histórico -->
+    <div id="modal-importar-historico" class="modal" style="display:none;">
+      <div class="modal-content">
+        <span class="close-button" onclick="fecharModalImportarHistorico()">&times;</span>
+        <h2>Importar Histórico de Leitura</h2>
+        <p>Selecione o mês ao qual o arquivo de histórico se refere:</p>
+        <input type="month" id="mes-importar-historico" required>
+        <input type="file" id="importar-historico-arquivo" accept=".xlsx" onchange="importarHistoricoLeitura(event)" style="display:none;" />
+        <button onclick="document.getElementById('importar-historico-arquivo').click()">Selecionar Arquivo XLSX</button>
+        <p style="margin-top: 10px;">* O arquivo deve seguir o formato de exportação de leitura.</p>
+      </div>
+    </div>
+  </main>
 
   <!-- Modal de Captura de Foto -->
   <div id="modal-captura-foto" class="modal" style="display:none;">
