@@ -111,6 +111,19 @@
   </div>
 
  <main id="bloco-detalhes" class="conteudo">
+    <!-- Modal de Salvar Histórico -->
+    <div id="modal-salvar-historico" class="modal" style="display:none;">
+      <div class="modal-content">
+        <span class="close-button" onclick="fecharModalSalvarHistorico()">&times;</span>
+        <h2>💾 Salvar Leitura no Histórico</h2>
+        <p>Selecione o mês ao qual esta leitura se refere:</p>
+        <input type="month" id="mes-salvar-historico" required>
+        <div style="margin-top: 15px;">
+          <button onclick="salvarLeituraDoMesComSelecao()" style="background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">✅ Salvar Leitura</button>
+          <button onclick="fecharModalSalvarHistorico()" style="background: #f44336; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin-left: 10px;">❌ Cancelar</button>
+        </div>
+      </div>
+    </div>
   </main>
 
   <!-- Modal de Captura de Foto -->
