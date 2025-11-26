@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Leituras do Bloco | Leitura de Hidrômetro</title>
+  <link rel="stylesheet" href="style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="logorecibo.png" type="image/png">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+</head>
+<body>
+  <script>
+    if (localStorage.getItem("logado") !== "true") location.href = "index.html";
+
+    // Verifica se a biblioteca XLSX foi carregada corretamente
+    if (typeof XLSX === 'undefined') {
+      alert("Biblioteca XLSX não carregada. Verifique a conexão ou recarregue a página.");
+    }
+
+    // ============== FUNÇÕES AUXILIARES (NECESSÁRIAS PARA OS MODAIS) ==============
+    
+    function carregarBlocos() {
+      return JSON.parse(localStorage.getItem("blocos")) || [];
+    }
+    
+    function salvarBlocos(blocos) {
+      localStorage.setItem("blocos", JSON.stringify(blocos));
+    }
+    
+    function mesAtual() {
+      const hoje = new Date();
+      return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
+    }
+    
+    function formatarMesLabel(mes) {
+      const [ano, numeroMes] = mes.split("-");
+      const date = new Date(`${ano}-${(numeroMes || "01")}-01`);
+      return date.toLocaleString("pt-BR", { month: "long", year: "numeric" });
+    }
+    
+    function showToast(message, isError = false) {
+      const toast = document.createElement("div");
+      toast.className = `toast ${isError ? "error" : "success"}`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    // ============== FUNÇÕES DOS MODAIS (AGORA NO ESCOPO GLOBAL) ==============
+    
+    function abrirModalSalvarHistorico() {
+      const modal = document.getElementById('modal-salvar-historico');
+      const mesInput = document.getElementById('mes-salvar-historico');
+      // Define o valor padrão como o mês atual
+      mesInput.value = mesAtual();
+      modal.style.display = 'block';
+    }
+    
+    function fecharModalSalvarHistorico() {
+      document.getElementById('modal-salvar-historico').style.display = 'none';
+    }
+    
+    function abrirModalImportarHistorico() {
+      const modal = document.getElementById('modal-importar-historico');
+      const mesInput = document.getElementById('mes-importar-historico');
+      // Define o valor padrão como o mês atual
+      mesInput.value = mesAtual();
+      modal.style.display = 'block';
+    }
+    
+    function fecharModalImportarHistorico() {
+      document.getElementById('modal-importar-historico').style.display = 'none';
+    }
+    
+    function salvarLeituraDoMesComSelecao() {
+      const mesSelecionado = document.getElementById('mes-salvar-historico').value;
+      if (!mesSelecionado) {
+        alert("Por favor, selecione o mês.");
+        return;
+      }
+      const id = Number(new URLSearchParams(location.search).get("id"));
+      // Chama a função principal que está no script.js
+      if (typeof salvarLeituraDoMes === 'function') {
+        salvarLeituraDoMes(id, mesSelecionado);
+      } else {
+        alert("Erro: função salvarLeituraDoMes não encontrada. Verifique se o script.js foi carregado.");
+      }
+    }
+    
+    function importarHistoricoLeitura(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+    
+      const mesSelecionado = document.getElementById('mes-importar-historico').value;
+      if (!mesSelecionado) {
+        alert("Por favor, selecione o mês ao qual o histórico se refere.");
+        event.target.value = '';
+        return;
+      }
+    
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: "array" });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+    
+          const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+    
+          const blocos = carregarBlocos();
+          const id = Number(new URLSearchParams(location.search).get("id"));
+          const bloco = blocos[id];
+          
+          // Busca a função getTarifa do script.js
+          const tarifa = (typeof getTarifa === 'function') ? getTarifa(bloco) : { minimo: 64.60, faixa_11_20: 8.94, faixa_21_50: 13.82 };
+    
+          // Validação básica do formato do arquivo
+          if (!json.length || !json[0]["Hidrômetro Nº"]) {
+            alert("O arquivo não parece estar no formato de leitura esperado. Verifique se as colunas estão corretas.");
+            return;
+          }
+    
+          // Busca a função calcularValorEscalonado do script.js
+          const calcularValor = (typeof calcularValorEscalonado === 'function') ? calcularValorEscalonado : function(m3, tarifa) {
+            const { minimo, faixa_11_20 } = tarifa;
+            if (m3 <= 10) return minimo;
+            return minimo + (m3 - 10) * faixa_11_20;
+          };
+          
+          // 1. Processa os dados importados
+          const historicoImportado = [];
+          json.forEach((row) => {
+            const ant = Number(row["Leitura Anterior"]) || 0;
+            const atu = Number(row["Leitura Atual"]) || 0;
+            const m3 = Math.max(0, atu - ant);
+            const valorRs = calcularValor(m3, tarifa).toFixed(2);
+    
+            historicoImportado.push({
+              numero: row["Hidrômetro Nº"] || "",
+              responsavel: row["Responsável"] || "",
+              leitura_anterior: ant,
+              leitura_atual: atu,
+              total_m3: m3,
+              total_rs: valorRs,
+              obs: row["Observações"] || ""
+            });
+          });
+    
+          // 2. Salva no histórico do bloco
+          bloco.historico = bloco.historico || {};
+          const mesKey = mesSelecionado;
+    
+          if (bloco.historico[mesKey]) {
+            if (!confirm(`Já existe um histórico para o mês ${formatarMesLabel(mesKey)}. Deseja sobrescrever com os dados importados?`)) {
+              return;
+            }
+          }
+    
+          bloco.historico[mesKey] = historicoImportado;
+          salvarBlocos(blocos);
+          
+          // Chama renderizarBlocoIndividual se existir
+          if (typeof renderizarBlocoIndividual === 'function') {
+            renderizarBlocoIndividual();
+          }
+          
+          showToast(`Histórico de ${formatarMesLabel(mesKey)} importado com sucesso!`);
+          fecharModalImportarHistorico();
+    
+        } catch (error) {
+          console.error("Erro ao importar histórico:", error);
+          alert("Erro ao processar o arquivo XLSX. Verifique se o arquivo está correto e tente novamente.");
+        } finally {
+          event.target.value = '';
+        }
+      };
+    
+      reader.readAsArrayBuffer(file);
+    }
+
+    // ============== EXPORTAÇÃO E IMPORTAÇÃO DE LEITURA ATUAL ==============
+    
+    // Corrige o botão de exportação
+    function exportarLeituraAtual() {
+      if (typeof XLSX === 'undefined') {
+        alert("Biblioteca XLSX não carregada.");
+        return;
+      }
+
+      const blocos = carregarBlocos();
+      const id = Number(new URLSearchParams(window.location.search).get("id"));
+      const bloco = blocos[id];
+      if (!bloco) {
+        alert("Bloco não encontrado.");
+        return;
+      }
+
+      const dados = bloco.leitura_atual || [];
+      const worksheetData = [
+        ["Hidrômetro Nº","Responsável","Leitura Anterior","Leitura Atual","m³","R$","Observações"],
+        ...dados.map(apt => [
+          apt.numero,
+          apt.responsavel,
+          apt.leitura_anterior,
+          apt.leitura_atual,
+          apt.total_m3,
+          `R$ ${apt.total_rs}`,
+          apt.obs
+        ])
+      ];
+
+      const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Leitura Atual");
+      const mes = mesAtual().replace("-", "_");
+      const nomeArquivo = `LeituraAtual_${(bloco.nome||"Bloco")}_${mes}.xlsx`.replace(/\s+/g, "_");
+      XLSX.writeFile(wb, nomeArquivo);
+    }
+
+    // Importação de leitura
+    function importarLeituraAtual(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+
+        const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+        const blocos = carregarBlocos();
+        const id = Number(new URLSearchParams(location.search).get("id"));
+        const bloco = blocos[id];
+        
+        // Busca a função getTarifa do script.js
+        const tarifa = (typeof getTarifa === 'function') ? getTarifa(bloco) : { minimo: 64.60, faixa_11_20: 8.94, faixa_21_50: 13.82 };
+        
+        // Busca a função calcularValorEscalonado do script.js
+        const calcularValor = (typeof calcularValorEscalonado === 'function') ? calcularValorEscalonado : function(m3, tarifa) {
+          const { minimo, faixa_11_20 } = tarifa;
+          if (m3 <= 10) return minimo;
+          return minimo + (m3 - 10) * faixa_11_20;
+        };
+
+        json.forEach((row, index) => {
+          if (!bloco.leitura_atual[index]) return;
+
+          const ant = Number(row["Leitura Anterior"]) || 0;
+          const atu = Number(row["Leitura Atual"]) || 0;
+          const m3 = Math.max(0, atu - ant);
+
+          const apt = bloco.leitura_atual[index];
+          apt.numero = row["Hidrômetro Nº"] || apt.numero;
+          apt.responsavel = row["Responsável"] || "";
+          apt.leitura_anterior = ant;
+          apt.leitura_atual = atu;
+          apt.total_m3 = m3;
+          apt.total_rs = calcularValor(m3, tarifa).toFixed(2);
+          apt.obs = row["Observações"] || "";
+        });
+
+        salvarBlocos(blocos);
+        alert("Leitura importada com sucesso!");
+        
+        // Chama renderizarBlocoIndividual se existir
+        if (typeof renderizarBlocoIndividual === 'function') {
+          renderizarBlocoIndividual();
+        }
+      };
+
+      reader.readAsArrayBuffer(file);
+    }
+  </script>
+
+  <div class="toolbar">
+	    <button class="voltar" aria-label="Voltar para o painel" onclick="window.location.href='dashboard.html'">🔙 Voltar</button>
+	    <div class="acoes">
+	      
+      <button type="button" onclick="exportarLeituraAtual()">📤 Exportar Leitura Atual</button>
+      <input type="file" id="importar-leitura-arquivo" accept=".xlsx" style="display:none" onchange="importarLeituraAtual(event)" />
+      <button type="button" onclick="document.getElementById('importar-leitura-arquivo').click()">📥 Importar Leitura Atual (XLSX)</button>
+      <button type="button" class="btn-danger" onclick="resetarBlocoPerguntar()">🗑️ Resetar Bloco</button>
+      <button type="button" onclick="(function(){ const id=new URLSearchParams(location.search).get('id'); location.href='boletos.html?id='+encodeURIComponent(id||'0'); })()">🧾 Boletos (imprimir)</button>
+	      <button type="button" onclick="abrirModalSalvarHistorico()">💾 Salvar Leitura do Mês</button>
+	      <button type="button" onclick="abrirModalImportarHistorico()">📥 Importar Histórico (XLSX)</button>
+    </div>
+  </div>
+
+ <main id="bloco-detalhes" class="conteudo">
+	    <!-- Modal de Salvar Histórico -->
+	    <div id="modal-salvar-historico" class="modal" style="display:none;">
+	      <div class="modal-content">
+	        <span class="close-button" onclick="fecharModalSalvarHistorico()">&times;</span>
+	        <h2>Salvar Leitura no Histórico</h2>
+	        <p>Selecione o mês ao qual esta leitura se refere:</p>
+	        <input type="month" id="mes-salvar-historico" required>
+	        <button onclick="salvarLeituraDoMesComSelecao()">Salvar Leitura</button>
+	      </div>
+	    </div>
+	
+	    <!-- Modal de Importar Histórico -->
+	    <div id="modal-importar-historico" class="modal" style="display:none;">
+	      <div class="modal-content">
+	        <span class="close-button" onclick="fecharModalImportarHistorico()">&times;</span>
+	        <h2>Importar Histórico de Leitura</h2>
+	        <p>Selecione o mês ao qual o arquivo de histórico se refere:</p>
+	        <input type="month" id="mes-importar-historico" required>
+	        <input type="file" id="importar-historico-arquivo" accept=".xlsx" onchange="importarHistoricoLeitura(event)" style="display:none;" />
+	        <button onclick="document.getElementById('importar-historico-arquivo').click()">Selecionar Arquivo XLSX</button>
+	        <p style="margin-top: 10px;">* O arquivo deve seguir o formato de exportação de leitura.</p>
+	      </div>
+	    </div>
+		  </main>
+
+  <!-- Modal de Captura de Foto -->
+  <div id="modal-captura-foto" class="modal" style="display:none;">
+    <div class="modal-content">
+      <span class="close-button" onclick="fecharModalCapturaFoto()">&times;</span>
+      <h2>Capturar Foto do Hidrômetro</h2>
+      <p>Apartamento: <strong id="foto-apt-nome"></strong></p>
+      
+      <div id="camera-view">
+        <video id="video-stream" width="320" height="240" autoplay></video>
+        <button onclick="capturarFoto()">Tirar Foto</button>
+      </div>
+      
+      <div id="upload-view" style="display:none;">
+        <input type="file" accept="image/*" onchange="uploadFoto(event)">
+      </div>
+
+      <canvas id="canvas-foto" width="320" height="240" style="display:none;"></canvas>
+      <img id="foto-preview" src="" alt="Prévia da Foto" style="display:none; max-width: 100%; height: auto;">
+      
+      <div class="modal-actions">
+        <button onclick="salvarFoto()">Salvar Foto</button>
+        <button onclick="alternarModoCaptura()">Alternar para Upload</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
