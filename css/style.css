@@ -1,6 +1,39 @@
+body {
+  font-family: Arial, sans-serif;
+  background: #f0f2f5;
+  margin: 30px;
+}
+
+h1 {
+  color: #1a73e8;
+}
+
+input, button {
+  padding: 8px;
+  margin: 5px;
+}
+
+button {
+  cursor: pointer;
+  background: #1a73e8;
+  color: white;
+  border: none;
+  border-radius: 5px;
+}
+
+section {
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+hr {
+  margin: 30px 0;
+}
+
 .blocos {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 15px;
 }
 
@@ -8,20 +41,23 @@
   background: white;
   border-radius: 8px;
   padding: 15px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
 
-.bloco-card h3 {
-  margin: 0;
-  color: #1a73e8;
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  margin-top: 15px;
 }
 
-.bloco-card p {
-  margin: 8px 0;
-  color: #444;
+th, td {
+  border: 1px solid #ccc;
+  padding: 6px;
+  text-align: center;
 }
 
-.bloco-card button {
-  margin-top: 10px;
+th {
+  background: #e9eef7;
 }
 ``
