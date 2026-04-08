@@ -3,24 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <title>Leitura de Hidrômetro</title>
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
 
-<h1>Administração de Leitura de Hidrômetro</h1>
+<h1>Condomínio — Leitura de Hidrômetro</h1>
 
-<section>
-  <h2>Adicionar Bloco</h2>
-  <input id="blocoNome" placeholder="Nome do Bloco">
+<section class="novo-bloco">
+  <h2>Novo Bloco</h2>
+  <input id="blocoNome" placeholder="Nome do Bloco (Ex: Bloco A)">
   <input id="sindicoNome" placeholder="Nome do Síndico">
-  <button onclick="adicionarBloco()">Criar Bloco</button>
+  <button onclick="criarBloco()">Criar Bloco</button>
 </section>
 
 <hr>
 
-<section id="blocos"></section>
+<h2>Blocos Cadastrados</h2>
 
-<script src="js/app.js"></script>
+<div id="listaBlocos" class="blocos"></div>
+
+<script src="./js/app.js"></script>
 </body>
 </html>
-``
