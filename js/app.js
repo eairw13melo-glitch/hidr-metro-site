@@ -133,6 +133,37 @@ function voltar() {
   window.location.href = "index.html";
 }
 
+function editarBloco(nomeAtual) {
+  const bloco = dados.blocos[nomeAtual];
+
+  const novoNome = prompt("Novo nome do bloco:", nomeAtual);
+  if (!novoNome) return;
+
+  const novoSindico = prompt("Novo nome do síndico:", bloco.sindico);
+  if (!novoSindico) return;
+
+  // Se mudou o nome do bloco, precisamos recriar a "pasta virtual"
+  if (novoNome !== nomeAtual) {
+    if (dados.blocos[novoNome]) {
+      alert("Já existe um bloco com esse nome");
+      return;
+    }
+
+    dados.blocos[novoNome] = {
+      sindico: novoSindico,
+      apartamentos: bloco.apartamentos
+    };
+
+    delete dados.blocos[nomeAtual];
+  } else {
+    bloco.sindico = novoSindico;
+  }
+
+  salvar();
+  renderBlocos();
+}
+``
+
 /* ========= INIT ========= */
 renderBlocos();
 carregarBloco();
