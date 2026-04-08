@@ -7,19 +7,19 @@ function salvar() {
   localStorage.setItem("hidrometro", JSON.stringify(dados));
 }
 
-/* ========= TELA INICIAL ========= */
+/* ===== TELA INICIAL ===== */
 
 function criarBloco() {
   const nome = document.getElementById("blocoNome").value.trim();
   const sindico = document.getElementById("sindicoNome").value.trim();
 
   if (!nome || !sindico) {
-    alert("Preencha o nome do bloco e do síndico");
+    alert("Preencha todos os campos");
     return;
   }
 
   if (dados.blocos[nome]) {
-    alert("Este bloco já existe");
+    alert("Bloco já existe");
     return;
   }
 
@@ -52,7 +52,6 @@ function renderBlocos() {
   lista.innerHTML = "";
 
   const nomes = Object.keys(dados.blocos);
-
   if (nomes.length === 0) {
     lista.innerHTML = "<p>Nenhum bloco cadastrado.</p>";
     return;
@@ -66,12 +65,10 @@ function renderBlocos() {
     div.innerHTML = `
       <h3>📁 ${nome}</h3>
       <p><strong>Síndico:</strong> ${bloco.sindico}</p>
-
       <button onclick="abrirBloco('${nome}')">Abrir</button>
       <button onclick="editarBloco('${nome}')" style="background:#fbbc04">Editar</button>
       <button onclick="excluirBloco('${nome}')" style="background:#d93025">Excluir</button>
     `;
-
     lista.appendChild(div);
   });
 }
@@ -82,16 +79,60 @@ function abrirBloco(nome) {
   window.location.href = "bloco.html";
 }
 
-/* ========= TELA DO BLOCO ========= */
+function editarBloco(nomeAtual) {
+  const bloco = dados.blocos[nomeAtual];
+
+  const novoNome = prompt("Novo nome do bloco:", nomeAtual);
+  if (!novoNome) return;
+
+  const novoSindico = prompt("Novo nome do síndico:", bloco.sindico);
+  if (!novoSindico) return;
+
+  if (novoNome !== nomeAtual) {
+    if (dados.blocos[novoNome]) {
+      alert("Já existe um bloco com esse nome");
+      return;
+    }
+    dados.blocos[novoNome] = {
+      sindico: novoSindico,
+      apartamentos: bloco.apartamentos
+    };
+    delete dados.blocos[nomeAtual];
+  } else {
+    bloco.sindico = novoSindico;
+  }
+
+  salvar();
+  renderBlocos();
+}
+
+function excluirBloco(nome) {
+  const confirmar = confirm(
+    `Tem certeza que deseja excluir o ${nome}?\nTodos os apartamentos serão apagados.`
+  );
+  if (!confirmar) return;
+
+  delete dados.blocos[nome];
+
+  if (dados.blocoAtual === nome) {
+    dados.blocoAtual = null;
+  }
+
+  salvar();
+  renderBlocos();
+}
+
+/* ===== TELA DO BLOCO ===== */
 
 function carregarBloco() {
   if (!dados.blocoAtual) return;
 
   const bloco = dados.blocos[dados.blocoAtual];
+  if (!bloco) return;
 
   document.getElementById("tituloBloco").innerText = dados.blocoAtual;
   document.getElementById("sindicoBloco").innerText =
-    `Síndico: ${bloco.sindico}`;
+    "Síndico: " + bloco.sindico;
 
   const tabela = document.getElementById("tabelaApartamentos");
   tabela.innerHTML = "";
@@ -133,37 +174,6 @@ function voltar() {
   window.location.href = "index.html";
 }
 
-function editarBloco(nomeAtual) {
-  const bloco = dados.blocos[nomeAtual];
-
-  const novoNome = prompt("Novo nome do bloco:", nomeAtual);
-  if (!novoNome) return;
-
-  const novoSindico = prompt("Novo nome do síndico:", bloco.sindico);
-  if (!novoSindico) return;
-
-  // Se mudou o nome do bloco, precisamos recriar a "pasta virtual"
-  if (novoNome !== nomeAtual) {
-    if (dados.blocos[novoNome]) {
-      alert("Já existe um bloco com esse nome");
-      return;
-    }
-
-    dados.blocos[novoNome] = {
-      sindico: novoSindico,
-      apartamentos: bloco.apartamentos
-    };
-
-    delete dados.blocos[nomeAtual];
-  } else {
-    bloco.sindico = novoSindico;
-  }
-
-  salvar();
-  renderBlocos();
-}
-``
-
-/* ========= INIT ========= */
+/* ===== INIT ===== */
 renderBlocos();
 carregarBloco();
