@@ -50,8 +50,8 @@ function renderBlocos() {
   if (!lista) return;
 
   lista.innerHTML = "";
-
   const nomes = Object.keys(dados.blocos);
+
   if (nomes.length === 0) {
     lista.innerHTML = "<p>Nenhum bloco cadastrado.</p>";
     return;
@@ -59,8 +59,8 @@ function renderBlocos() {
 
   nomes.forEach(nome => {
     const bloco = dados.blocos[nome];
-
     const div = document.createElement("div");
+
     div.className = "bloco-card";
     div.innerHTML = `
       <h3>📁 ${nome}</h3>
@@ -69,6 +69,7 @@ function renderBlocos() {
       <button onclick="editarBloco('${nome}')" style="background:#fbbc04">Editar</button>
       <button onclick="excluirBloco('${nome}')" style="background:#d93025">Excluir</button>
     `;
+
     lista.appendChild(div);
   });
 }
@@ -83,10 +84,9 @@ function editarBloco(nomeAtual) {
   const bloco = dados.blocos[nomeAtual];
 
   const novoNome = prompt("Novo nome do bloco:", nomeAtual);
-  if (!novoNome) return;
-
   const novoSindico = prompt("Novo nome do síndico:", bloco.sindico);
-  if (!novoSindico) return;
+
+  if (!novoNome || !novoSindico) return;
 
   if (novoNome !== nomeAtual) {
     if (dados.blocos[novoNome]) {
@@ -107,16 +107,10 @@ function editarBloco(nomeAtual) {
 }
 
 function excluirBloco(nome) {
-  const confirmar = confirm(
-    `Tem certeza que deseja excluir o ${nome}?\nTodos os apartamentos serão apagados.`
-  );
-  if (!confirmar) return;
+  if (!confirm(`Excluir ${nome}? Todos os dados serão apagados.`)) return;
 
   delete dados.blocos[nome];
-
-  if (dados.blocoAtual === nome) {
-    dados.blocoAtual = null;
-  }
+  if (dados.blocoAtual === nome) dados.blocoAtual = null;
 
   salvar();
   renderBlocos();
@@ -131,41 +125,28 @@ function carregarBloco() {
   if (!bloco) return;
 
   document.getElementById("tituloBloco").innerText = dados.blocoAtual;
-  document.getElementById("sindicoBloco").innerText =
-    "Síndico: " + bloco.sindico;
+  document.getElementById("sindicoBloco").innerText = `Síndico: ${bloco.sindico}`;
 
   const tabela = document.getElementById("tabelaApartamentos");
   tabela.innerHTML = "";
 
-  bloco.apartamentos.forEach((ap, index) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${ap.numero}</td>
-      <td>
-        <input value="${ap.responsavel}"
-          oninput="atualizarCampo(${index}, 'responsavel', this.value)">
-      </td>
-      <td>
-        <input type="number" value="${ap.leituraAnterior}"
-          oninput="atualizarCampo(${index}, 'leituraAnterior', Number(this.value))">
-      </td>
-      <td>
-        <input type="number" value="${ap.leituraAtual}"
-          oninput="atualizarCampo(${index}, 'leituraAtual', Number(this.value))">
-      </td>
-      <td>${ap.consumo}</td>
+  bloco.apartamentos.forEach((ap, i) => {
+    tabela.innerHTML += `
+      <tr>
+        <td>${ap.numero}</td>
+        <td><input value="${ap.responsavel}" oninput="atualizarCampo(${i},'responsavel',this.value)"></td>
+        <td><input type="number" value="${ap.leituraAnterior}" oninput="atualizarCampo(${i},'leituraAnterior',Number(this.value))"></td>
+        <td><input type="number" value="${ap.leituraAtual}" oninput="atualizarCampo(${i},'leituraAtual',Number(this.value))"></td>
+        <td>${ap.consumo}</td>
+      </tr>
     `;
-    tabela.appendChild(tr);
   });
 }
 
-function atualizarCampo(index, campo, valor) {
-  const bloco = dados.blocos[dados.blocoAtual];
-  const ap = bloco.apartamentos[index];
-
+function atualizarCampo(i, campo, valor) {
+  const ap = dados.blocos[dados.blocoAtual].apartamentos[i];
   ap[campo] = valor;
   ap.consumo = ap.leituraAtual - ap.leituraAnterior;
-
   salvar();
   carregarBloco();
 }
@@ -174,6 +155,8 @@ function voltar() {
   window.location.href = "index.html";
 }
 
-/* ===== INIT ===== */
-renderBlocos();
-carregarBloco();
+/* ===== INIT SEGURO ===== */
+document.addEventListener("DOMContentLoaded", () => {
+  renderBlocos();
+  carregarBloco();
+});
