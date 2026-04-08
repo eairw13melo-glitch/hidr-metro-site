@@ -44,6 +44,10 @@ hr {
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
 
+.bloco-card button {
+  margin-right: 6px;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -60,8 +64,3 @@ th, td {
 th {
   background: #e9eef7;
 }
-
-.bloco-card button {
-  margin-right: 5px;
-}
-``
