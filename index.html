@@ -3,30 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <title>Leitura de Hidrômetro</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-<h1>Controle de Leitura de Hidrômetro</h1>
+<h1>Administração de Leitura de Hidrômetro</h1>
 
-<form id="form">
-  <input type="text" id="imovel" placeholder="Imóvel" required>
-  <input type="number" id="leitura" placeholder="Leitura Atual" required>
-  <button type="submit">Salvar</button>
-</form>
+<section>
+  <h2>Adicionar Bloco</h2>
+  <input id="blocoNome" placeholder="Nome do Bloco">
+  <input id="sindicoNome" placeholder="Nome do Síndico">
+  <button onclick="adicionarBloco()">Criar Bloco</button>
+</section>
 
-<h2>Histórico</h2>
-<table>
-  <thead>
-    <tr>
-      <th>Imóvel</th>
-      <th>Leitura</th>
-      <th>Data</th>
-    </tr>
-  </thead>
-  <tbody id="historico"></tbody>
-</table>
+<hr>
 
-<script src="app.js"></script>
+<section id="blocos"></section>
+
+<script src="js/app.js"></script>
 </body>
 </html>
+``
