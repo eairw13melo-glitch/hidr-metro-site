@@ -9,6 +9,15 @@ function salvar() {
 
 /* ===== TELA INICIAL ===== */
 
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("btnCriar");
+  if (btn) {
+    btn.addEventListener("click", criarBloco);
+  }
+  renderBlocos();
+  carregarBloco();
+});
+
 function criarBloco() {
   const nome = document.getElementById("blocoNome").value.trim();
   const sindico = document.getElementById("sindicoNome").value.trim();
@@ -50,26 +59,18 @@ function renderBlocos() {
   if (!lista) return;
 
   lista.innerHTML = "";
-  const nomes = Object.keys(dados.blocos);
 
-  if (nomes.length === 0) {
-    lista.innerHTML = "<p>Nenhum bloco cadastrado.</p>";
-    return;
-  }
-
-  nomes.forEach(nome => {
+  Object.keys(dados.blocos).forEach(nome => {
     const bloco = dados.blocos[nome];
+
     const div = document.createElement("div");
-
-    div.className = "bloco-card";
     div.innerHTML = `
-      <h3>📁 ${nome}</h3>
-      <p><strong>Síndico:</strong> ${bloco.sindico}</p>
+      <strong>${nome}</strong> — Síndico: ${bloco.sindico}
+      <br/>
       <button onclick="abrirBloco('${nome}')">Abrir</button>
-      <button onclick="editarBloco('${nome}')" style="background:#fbbc04">Editar</button>
-      <button onclick="excluirBloco('${nome}')" style="background:#d93025">Excluir</button>
+      <button onclick="excluirBloco('${nome}')">Excluir</button>
+      <hr/>
     `;
-
     lista.appendChild(div);
   });
 }
@@ -80,83 +81,39 @@ function abrirBloco(nome) {
   window.location.href = "bloco.html";
 }
 
-function editarBloco(nomeAtual) {
-  const bloco = dados.blocos[nomeAtual];
-
-  const novoNome = prompt("Novo nome do bloco:", nomeAtual);
-  const novoSindico = prompt("Novo nome do síndico:", bloco.sindico);
-
-  if (!novoNome || !novoSindico) return;
-
-  if (novoNome !== nomeAtual) {
-    if (dados.blocos[novoNome]) {
-      alert("Já existe um bloco com esse nome");
-      return;
-    }
-    dados.blocos[novoNome] = {
-      sindico: novoSindico,
-      apartamentos: bloco.apartamentos
-    };
-    delete dados.blocos[nomeAtual];
-  } else {
-    bloco.sindico = novoSindico;
-  }
-
-  salvar();
-  renderBlocos();
-}
-
 function excluirBloco(nome) {
-  if (!confirm(`Excluir ${nome}? Todos os dados serão apagados.`)) return;
-
+  if (!confirm("Excluir o bloco " + nome + "?")) return;
   delete dados.blocos[nome];
-  if (dados.blocoAtual === nome) dados.blocoAtual = null;
-
   salvar();
   renderBlocos();
 }
 
-/* ===== TELA DO BLOCO ===== */
+/* ===== BLOCO ===== */
 
 function carregarBloco() {
   if (!dados.blocoAtual) return;
-
   const bloco = dados.blocos[dados.blocoAtual];
   if (!bloco) return;
 
   document.getElementById("tituloBloco").innerText = dados.blocoAtual;
-  document.getElementById("sindicoBloco").innerText = `Síndico: ${bloco.sindico}`;
+  document.getElementById("sindicoBloco").innerText = "Síndico: " + bloco.sindico;
 
   const tabela = document.getElementById("tabelaApartamentos");
   tabela.innerHTML = "";
 
-  bloco.apartamentos.forEach((ap, i) => {
+  bloco.apartamentos.forEach(ap => {
     tabela.innerHTML += `
       <tr>
         <td>${ap.numero}</td>
-        <td><input value="${ap.responsavel}" oninput="atualizarCampo(${i},'responsavel',this.value)"></td>
-        <td><input type="number" value="${ap.leituraAnterior}" oninput="atualizarCampo(${i},'leituraAnterior',Number(this.value))"></td>
-        <td><input type="number" value="${ap.leituraAtual}" oninput="atualizarCampo(${i},'leituraAtual',Number(this.value))"></td>
+        <td>${ap.responsavel}</td>
+        <td>${ap.leituraAnterior}</td>
+        <td>${ap.leituraAtual}</td>
         <td>${ap.consumo}</td>
       </tr>
     `;
   });
 }
 
-function atualizarCampo(i, campo, valor) {
-  const ap = dados.blocos[dados.blocoAtual].apartamentos[i];
-  ap[campo] = valor;
-  ap.consumo = ap.leituraAtual - ap.leituraAnterior;
-  salvar();
-  carregarBloco();
-}
-
 function voltar() {
   window.location.href = "index.html";
 }
-
-/* ===== INIT SEGURO ===== */
-document.addEventListener("DOMContentLoaded", () => {
-  renderBlocos();
-  carregarBloco();
-});
