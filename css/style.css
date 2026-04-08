@@ -1,38 +1,27 @@
-body {
-  font-family: Arial, sans-serif;
-  background: #f0f2f5;
-  margin: 30px;
+.blocos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 15px;
 }
 
-section {
+.bloco-card {
   background: white;
+  border-radius: 8px;
   padding: 15px;
-  margin-bottom: 20px;
-  border-radius: 6px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-input, button {
-  padding: 6px;
-  margin: 4px;
+.bloco-card h3 {
+  margin: 0;
+  color: #1a73e8;
 }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
+.bloco-card p {
+  margin: 8px 0;
+  color: #444;
+}
+
+.bloco-card button {
   margin-top: 10px;
-}
-
-th, td {
-  border: 1px solid #ccc;
-  padding: 6px;
-  text-align: center;
-}
-
-button {
-  cursor: pointer;
-  background: #1a73e8;
-  color: white;
-  border: none;
-  border-radius: 4px;
 }
 ``
