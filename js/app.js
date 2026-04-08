@@ -66,7 +66,10 @@ function renderBlocos() {
     div.innerHTML = `
       <h3>📁 ${nome}</h3>
       <p><strong>Síndico:</strong> ${bloco.sindico}</p>
-      <button onclick="abrirBloco('${nome}')">Abrir Bloco</button>
+
+      <button onclick="abrirBloco('${nome}')">Abrir</button>
+      <button onclick="editarBloco('${nome}')" style="background:#fbbc04">Editar</button>
+      <button onclick="excluirBloco('${nome}')" style="background:#d93025">Excluir</button>
     `;
 
     lista.appendChild(div);
