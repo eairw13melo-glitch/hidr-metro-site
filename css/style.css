@@ -60,4 +60,8 @@ th, td {
 th {
   background: #e9eef7;
 }
+
+.bloco-card button {
+  margin-right: 5px;
+}
 ``
